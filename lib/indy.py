@@ -43,7 +43,7 @@ class Blueprint(object):
         self.product_quantity = 0
 
 
-    def fetchBlueprintData(self, sde = None):
+    def fetchBpData(self, sde = None):
         ''' load info from SDE '''
         if sde == None:
             sde = SDE()

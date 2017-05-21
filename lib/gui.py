@@ -46,7 +46,7 @@ class BPcalc_GUI(qw.QWidget):
     def __init__(self):
         super().__init__()
         self.makeLayout()
-        self.sde = indy.SDE()
+        self.sde = None
 
 
     def makeLayout(self):
@@ -72,7 +72,8 @@ class BPcalc_GUI(qw.QWidget):
         self.calculate_button = qw.QPushButton('Calculate!',self)
         self.calculate_button.clicked.connect(self.calculateBP)
 
-        results_box_layout = qw.QVBoxLayout()
+        #results_box_layout = qw.QVBoxLayout()
+        self.results_table = qw.QTableWidget()
         self.results_box = qw.QGroupBox(self)
         self.results_box_label = qw.QLabel('Materials Required:', self)
         self.results_box_label.setFont(font2)
@@ -83,7 +84,7 @@ class BPcalc_GUI(qw.QWidget):
         layout.addWidget(self.initialize_sde_button, 1,1)
         layout.addWidget(self.calculate_button, 1,2)
         layout.addWidget(self.results_box_label, 1,1)
-        layout.addWidget(self.results_box, 3,1,)
+        layout.addWidget(self.results_table, 3,1)
 
     def initialize_SDE(self):
 
@@ -91,16 +92,18 @@ class BPcalc_GUI(qw.QWidget):
 
     def calculateBP(self):
 
-        blueprintID = self.blueprintID_textbox.text()
+        blueprintID = int(self.blueprintID_textbox.text())
         self.testbp = indy.Blueprint(blueprintID)
-        self.testbp.fetchBpData()
-        self.testbp.getMaterials()
+        self.testbp.fetchBpData(sde=self.sde)
+        results = self.testbp.getMaterials()
+        self.showMaterialsList(results)
 
-
-
-    def showMaterialsList(self):
-        pass
-
+    def showMaterialsList(self, results):
+        n=0
+        for key, value in results:
+            n+=1
+            self.results_table.setItem(1,n, qw.QtableWidgetItem(key))
+            self.results_table.setItem(2,n, qw.QtableWidgetItem(value))
 
 if __name__ == '__main__':
 
