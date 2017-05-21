@@ -2,15 +2,46 @@
 """
 Created on Sat May 20 17:10:26 2017
 
-@author: Stymir
+@author: Steinn Ymir
 """
+from lib import indy, gfs, gui
+from . import indy, gfs
+from PyQt5 import QtGui as qg  # (the example applies equally well to PySide)
+from PyQt5 import QtWidgets as qw
+from PyQt5 import QtCore as qc
+import sys
 
-
-from lib import *
 
 def main():
-    pass
+
+
+
+    timer = gfs.Timer()
+    timer.tic()
+
+#    sde = SDE()
+#    sde.import_indy_DB()
+#    timer.tic()
+
+    testbp = indy.Blueprint(28675)
+    testbp.fetchBpData()
+
+    print(testbp.getMaterials(20))
+
+
+    timer.toc()
+
+def launchGUI():
+    ''' launch the gui '''
+    app = qc.QCoreApplication.instance()
+    if app is None:
+        app = qg.QApplication(sys.argv)
+    # Create handle prg for the Graphic Interface
+    prg = gui.MainWindow()
+    prg.show()
+    app.exec_()
 
 
 if __name__ == '__main__':
     main()
+    #launch()
