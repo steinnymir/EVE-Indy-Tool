@@ -5,7 +5,7 @@ Created on Sat May 20 17:02:12 2017
 @author: Stymir
 """
 from openpyxl import load_workbook
-from . import gfs
+from . import gfs, indy
 import csv
 import os
 import yaml
@@ -47,6 +47,7 @@ class Blueprint(object):
         ''' load info from SDE '''
         if sde == None:
             sde = SDE()
+            print('Loading Blueprints to SDE')
             sde.importData('blueprints')
         try:
             bpDict = sde.blueprints[self.bpID]
@@ -143,6 +144,7 @@ class SDE(object):
             data = self.getFile_csv(db_name)
 
         setattr(self,db_name,data)
+        print('import completed')
 
     def getFilepath(self,db_name,ext):
         return(self.db_location_csv + db_name + '.'+ext)
