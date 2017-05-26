@@ -16,7 +16,18 @@ class Timer(object):
 
     def tic(self):
         self.timestamps.append(time.time())
-    def toc (self):
+
+    def toc(self, out = 'print'):
+
+        t = time.time()
+        dt = t - self.timestamps[-1]
+        self.timestamps.append(time.time())
+        if out == 'return':
+            return dt
+        elif out == 'print':
+            print('last time section: ' + str(dt) + ' ms')
+
+    def toc_end (self):
         self.timestamps.append(time.time())
         n=1
         t_prec= 0

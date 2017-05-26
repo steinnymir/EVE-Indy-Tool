@@ -93,7 +93,7 @@ class BPcalc_GUI(qw.QWidget):
 
     def initialize_SDE(self):
 
-        self.sde.importData('blueprints')
+        self.sde.import_pickle('blueprints')
 
     def calculateBP(self):
 
@@ -101,9 +101,9 @@ class BPcalc_GUI(qw.QWidget):
         print(blueprintID)
         self.testbp = indy.Blueprint(blueprintID)
         print('fetching data')
-        self.testbp.fetchBpData(sde=self.sde)
+        self.testbp.fetch_bp_data(sde=self.sde)
         print('data aquired. assigning results')
-        results = self.testbp.getMaterials()
+        results = self.testbp.get_manufacturing_materials()
 
         self.showMaterialsList(results)
 

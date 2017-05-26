@@ -12,25 +12,28 @@ import sys
 
 
 def main():
+    timer = gfs.Timer()
+    timer.tic()
 
 
 
-#    timer = gfs.Timer()
-#    timer.tic()
-#
-##    sde = SDE()
-##    sde.import_indy_DB()
-##    timer.tic()
-#
-#    testbp = indy.Blueprint(28675)
-#    testbp.fetchBpData()
-#
-#    print(testbp.getMaterials(20))
-#
-#
-#    timer.toc()
 
-    launchGUI()
+
+    sde = indy.SDE()
+
+    sde.import_indy_db()
+
+     # sde.import_pickle('blueprints')
+    print(sde.blueprints[28675])
+    print(sde.invTypes[28675])
+    timer.toc_end()
+
+    test_bp = indy.Blueprint(681, sde)
+    test_bp.printName()
+    test_bp.fetch_bp_data()
+    #print(test_bp.activities)
+    materials = test_bp.get_manufacturing_materials(out='name')
+    print(materials)
 
 def launchGUI():
     ''' launch the gui '''
@@ -45,4 +48,4 @@ def launchGUI():
 
 if __name__ == '__main__':
     main()
-    #launch()
+    #launchGUI()
