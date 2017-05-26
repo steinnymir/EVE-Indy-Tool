@@ -25,8 +25,8 @@ class SDE(object):
 
     def __init__(self):
 
-        DB_LOCATION = 'D:/Documents/py_code/EVE_database/'
-        DB_LOCATION =  'C:/Users/sagustss/py_code/EVE_database/'  # comment when at home
+        DB_LOCATION = '../database/'
+        #DB_LOCATION =  'C:/Users/sagustss/py_code/EVE_database/'  # comment when at home
 
         self.DB_LOCATION_CSV = DB_LOCATION + 'csv/'
         self.DB_LOCATION_YAML = DB_LOCATION + 'sde/fsd/'
