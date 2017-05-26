@@ -30,7 +30,7 @@ def main():
 
     db = sde.SDE()
     db.import_quick()
-
+    #test change
     itemList = [30245,30329,30244,34,15686,13004]
     materials = []
     value = 0
