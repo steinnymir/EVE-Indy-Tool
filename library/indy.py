@@ -32,22 +32,27 @@ def main():
     db.import_quick()
 
     itemList = [30245,30329,30244,34,15686,13004]
-
+    materials = []
+    value = 0
     for item in itemList:
-        bp = Blueprint(30245,db)
-        # bp.printName()
+        bp = Blueprint(item,db)
+        bp.printName()
+        if bp.basePrice is not None:
+            value += bp.basePrice
+        materials.append(bp.manufacturing_materials)
+    print(value)
         # print(bp.manufacturing_materials)
 
     timer.toc()
-    timer.reset()
-    timer.tic()
-
-    for item in itemList:
-        bp = Blueprint(30245)
-        # bp.printName()
-        # print(bp.manufacturing_materials)
-
-    timer.toc()
+    # timer.reset()
+    # timer.tic()
+    #
+    # for item in itemList:
+    #     bp = Blueprint(30245)
+    #     # bp.printName()
+    #     # print(bp.manufacturing_materials)
+    #
+    # timer.toc()
 
 class EVEItem(object):
     """ an object in new eden """
