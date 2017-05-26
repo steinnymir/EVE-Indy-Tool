@@ -20,7 +20,7 @@ class Timer(object):
     def toc(self, out = 'print'):
 
         t = time.time()
-        dt = t - self.timestamps[-1]
+        dt = (t - self.timestamps[-1]) * 1000
         self.timestamps.append(time.time())
         if out == 'return':
             return dt

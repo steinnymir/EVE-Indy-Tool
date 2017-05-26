@@ -16,7 +16,7 @@ def main():
     # timer = gfs.Timer()
     # timer.tic()
     #
-    sde = sde.SDE()
+    db = sde.SDE()
 
     #
     # sde.import_quick()
