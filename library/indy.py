@@ -183,7 +183,7 @@ class EVEItem(object):
 class Blueprint(EVEItem):
     """ a blueprint class """
 
-    def __init__(self, blueprintID, SDE=None):  # todo: fix import of SDE in EVEitem and Blueprint
+    def __init__(self, blueprintID, SDE=None):
         """ """
         super(Blueprint, self).__init__(blueprintID, SDE)
         # self.activities = {'copying', 'manufacturing', 'research_material', 'research_time'}

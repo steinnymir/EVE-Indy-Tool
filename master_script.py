@@ -39,9 +39,8 @@ def main():
     print(newerpath)
 
 
-
 def launchGUI():
-    ''' launch the gui '''
+    """ launch the gui """
     app = qc.QCoreApplication.instance()
     if app is None:
         app = qw.QApplication(sys.argv)

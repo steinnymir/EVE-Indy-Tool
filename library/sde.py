@@ -20,7 +20,10 @@ def main():
     # # import yaml / csv and dump pickle
     # sde.export_multiple_pickle(dbList)
     name = sde.typeIDs[34]['name']['en']
-    print(sde.get_ID_from_name('veldspar'))
+
+    ID = sde.get_ID_from_name('condor')
+
+    print(sde.get_parent_BP(ID))
 
 class SDE(object):
     """ Contains a series of dictionaries containing necessary sde data"""
@@ -108,7 +111,7 @@ class SDE(object):
             print('exporting: ' + db_name)
             self.export_pickle(db_name)
 
-    def import_pickle(self, dbName):  # todo: untested
+    def import_pickle(self, dbName):
         """ imports data from pickle dumped file"""
         # try:
         timer = gfs.Timer()
@@ -185,7 +188,7 @@ class SDE(object):
                             data[key][label] = val
         return (data)
 
-    def get_ID_from_name(self, name):  # todo: doesnt work out of this file, for some reason
+    def get_ID_from_name(self, name):
         """ returns the itemID from a given name
 
         :return: int
@@ -204,12 +207,14 @@ class SDE(object):
         """ returns the blueprintID that produces the item with given itemID
         :return: int
         """
-        bpID = 0
+        parent_tipeID = 0
         for key in self.blueprints:
             try:
-                parent_tipeID = self.blueprints[key]['activities']['manufacturing']['products']['typeID']
-                if parent_tipeID == itemID:
-                    return key
+                product_list = self.blueprints[key]['activities']['manufacturing']['products']
+                for item in product_list:  # products is a list. so we need to break the dcit style and add list parser
+                    parent_tipeID = item['typeID']
+                    if parent_tipeID == itemID:
+                        return key
             except KeyError:
                 pass
 
