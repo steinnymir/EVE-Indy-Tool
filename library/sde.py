@@ -15,10 +15,12 @@ import pickle
 def main():
     """ this refreshes import of data from yaml sde to pickle format"""
     sde = SDE()
-
-    dbList = ['blueprints', 'typeIDs']
-    # import yaml / csv and dump pickle
-    sde.export_multiple_pickle(dbList)
+    sde.import_quick()
+    # dbList = ['blueprints', 'typeIDs']
+    # # import yaml / csv and dump pickle
+    # sde.export_multiple_pickle(dbList)
+    name = sde.typeIDs[34]['name']['en']
+    print(sde.get_ID_from_name('veldspar'))
 
 class SDE(object):
     """ Contains a series of dictionaries containing necessary sde data"""
@@ -26,10 +28,10 @@ class SDE(object):
     def __init__(self):
 
         DB_LOCATION = '../database/'
-        #DB_LOCATION =  'C:/Users/sagustss/py_code/EVE_database/'  # comment when at home
+        DB_LOCATION =  'D:/Documents/py_code/EVEIndyTool/database/'  # comment when at home
 
-        self.DB_LOCATION_CSV = DB_LOCATION + 'csv/'
-        self.DB_LOCATION_YAML = DB_LOCATION + 'sde/fsd/'
+        self.DB_LOCATION_CSV = 'D:/Documents/py_code/EVE_database/' + 'csv/'
+        self.DB_LOCATION_YAML = 'D:/Documents/py_code/EVE_database/' + 'sde/fsd/'
         self.DB_LOCATION_PICKLE = DB_LOCATION
         self.QUICK_IMPORT_LIST = ['typeIDs', 'blueprints']
 
@@ -165,7 +167,7 @@ class SDE(object):
                         for word in line:
                             label = headers[pos]
                             pos += 1
-                            val = getNum_or_Str(word)
+                            val = gfs.getNum_or_Str(word)
                             try:
                                 data[key][label].append(val)
                             except AttributeError:
@@ -183,27 +185,38 @@ class SDE(object):
                             data[key][label] = val
         return (data)
 
-    # --------------- Old and deprectated methods ------------------
+    def get_ID_from_name(self, name):  # todo: doesnt work out of this file, for some reason
+        """ returns the itemID from a given name
 
-    def init_db_list(self):
-        """ list all csv database files"""
-        file_list = os.listdir(self.DB_LOCATION_CSV)
-        for name in file_list:
-            self.db_list.append(name[:-4])
+        :return: int
+        """
+        itemName = ''
+        for key in self.typeIDs:
+            try:
+                itemName = str(self.typeIDs[key]['name']['en']).lower()
+                if itemName == name.lower():
+                    return key
+            except KeyError:
+                pass
 
-    def import_all_csv(self):
-        """ imports all csv database files"""
-        if len(self.db_list) == 0:
-            self.init_db_list()
 
-        for name in self.db_list:
-            print(name)
-            self.import_data(self.get_filepath(name))
+    def get_parent_BP(self, itemID):  # todo: Fix me
+        """ returns the blueprintID that produces the item with given itemID
+        :return: int
+        """
+        bpID = 0
+        for key in self.blueprints:
+            try:
+                parent_tipeID = self.blueprints[key]['activities']['manufacturing']['products']['typeID']
+                if parent_tipeID == itemID:
+                    return key
+            except KeyError:
+                pass
 
-    def import_db_core_indy(self):
-        """ import database files used for industry purposes."""
-        for name in self.db_coreIndy_old:
-            self.import_data(name)
+
+
+            # --------------- Old and deprectated methods ------------------
+
 
     def open_file_xlsx(self, file):
         ''' '''

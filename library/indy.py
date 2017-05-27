@@ -14,6 +14,7 @@ except ImportError:
 
 
 def main():
+
     timer = gfs.Timer()
     timer.tic()
 
@@ -29,19 +30,39 @@ def main():
     # timer.toc()
 
     db = sde.SDE()
+
     db.import_quick()
-    #test change
-    itemList = [30245,30329,30244,34,15686,13004]
-    materials = []
-    value = 0
-    for item in itemList:
-        bp = Blueprint(item,db)
-        bp.printName()
-        if bp.basePrice is not None:
-            value += bp.basePrice
-        materials.append(bp.manufacturing_materials)
-    print(value)
-        # print(bp.manufacturing_materials)
+    print('\n\n\n')
+    # # test change
+    # itemList = [820, 822]
+    # materials = {}
+    # value = 0
+    # for item in itemList:
+    #     bp = Blueprint(item, db)
+    #     bp.printName()
+    #     print('invention probability: ' + str(bp.invention_probability))
+    #     if bp.basePrice is not None:
+    #         value += bp.basePrice
+    #     try:
+    #         for key in bp.manufacturing_materials:
+    #             try:
+    #                 value = bp.manufacturing_materials[key]
+    #                 materials[key] += value
+    #             except KeyError:
+    #                 materials[key] = value
+    #     except TypeError:
+    #         pass
+
+    name = 'condor'
+
+    ID = db.get_ID_from_name(name)
+    print(ID)
+    itemBP = db.get_parent_BP(ID)
+    print('parent bp: ' + str(itemBP))
+    item = EVEItem(ID,db)
+    item.printName
+    print(item.basePrice)
+
 
     timer.toc()
     # timer.reset()
@@ -53,6 +74,34 @@ def main():
     #     # print(bp.manufacturing_materials)
     #
     # timer.toc()
+
+
+class MassProduction(object):
+    """ class for managing multiple items, in production, invention or whatever """
+
+    def __init__(self):
+        """ init attributes"""
+        self.materials_list = {}
+
+    def get_manufacturing_materials_list(self, itemList):
+        """ calculate list of required materials from a list of bpIDs.
+        :type itemList: list of itemIDs of blueprints.
+        :return materials_dict:
+        """
+
+        for item in itemList:
+            bp = Blueprint(item, db)
+            bp.printName()
+            try:  # check whether itemID is a blueprint with material requirement for manufacturing
+                for key in bp.manufacturing_materials:
+                    try:
+                        quantity = bp.manufacturing_materials[key]
+                        self.materials_list[key] += quantity
+                    except KeyError:  # if key (material) not present yet, create it
+                        self.materials_list[key] = quantity
+            except TypeError:
+                pass
+
 
 class EVEItem(object):
     """ an object in new eden """
@@ -126,29 +175,9 @@ class EVEItem(object):
                 except KeyError:
                     pass
 
-
-
-
-
-                    # self.basePrice = float(sde.typeIDs[self.itemID]['capacity'])
-                # self.marketGroupID = int(sde.typeIDs[self.itemID]['capacity'])
-                #
-                # self.capacity = float(sde.typeIDs[self.itemID]['capacity'])
-                # self.description = str(sde.typeIDs[self.itemID]['description'])
-                # self.factionID = int(sde.typeIDs[self.itemID]['factionID'])
-                # self.graphicID = int(sde.typeIDs[self.itemID]['graphicID'])
-                # self.groupID = int(sde.typeIDs[self.itemID]['groupID'])
-                # self.marketGroupID = int(sde.typeIDs[self.itemID]['marketGroupID'])
-                # self.mass = int(sde.typeIDs[self.itemID]['mass'])
-                # self.masteries = dict(sde.typeIDs[self.itemID]['masteries'])
-                # self.name = str(sde.typeIDs[self.itemID]['name'])
-                # self.portionSize = int(sde.typeIDs[self.itemID]['portionSize'])
-                # self.published = bool(sde.typeIDs[self.itemID]['published'])
-                # self.raceID = int(sde.typeIDs[self.itemID]['raceID'])
-                # self.radius = float(sde.typeIDs[self.itemID]['radius'])
-                # self.soundID = int(sde.typeIDs[self.itemID]['soundID'])
-                # self.traits = dict(sde.typeIDs[self.itemID]['traits'])
-                # self.volume = float(sde.typeIDs[self.itemID]['volume'])
+    def get_parent_blueprintID(self):
+        """ :returns itemID of blueprint that would produce this item"""
+        pass
 
 
 class Blueprint(EVEItem):
@@ -166,7 +195,7 @@ class Blueprint(EVEItem):
 
         self.blueprints_attr_list = ['copying_materials',
                                      'copying_skills', 'copying_time', 'invention_materials',
-                                     # 'invention_products_probability',
+                                     'invention_probability',
                                      'invention_products', 'invention_time', 'manufacturing_materials',
                                      'manufacturing_products', 'manufacturing_skills', 'manufacturing_time',
                                      'research_material_materials', 'research_material_skills',
@@ -178,7 +207,7 @@ class Blueprint(EVEItem):
         self.copying_skills = None
         self.copying_time = None
         self.invention_materials = None
-        # self.invention_products_probability = None
+        self.invention_probability = None
         self.invention_products = None
         self.invention_time = None
         self.manufacturing_materials = None
@@ -196,84 +225,107 @@ class Blueprint(EVEItem):
 
         self.initialize_BP()
 
+
     def initialize_BP(self, sde=None):
         """ initializes all BP related attributes"""
+
         if sde is None:
             sde = self._sde
 
-        # for attribute in self.blueprints_attr_list:
-        #     setattr(self,attribute,)
-        try:
-            self.copying_materials = dict(sde.blueprints[self.itemID]['activities']['copying']['materials'][0])
-            self.copying_skills = dict(sde.blueprints[self.itemID]['activities']['copying']['skills'][0])
+        try:  # --------------  copying  --------------
+            self.copying_materials = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['activities']['copying']['materials'],
+                key_label='typeID',
+                quantity_label='quantity')
+
+            self.copying_skills = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['activities']['copying']['skills'],
+                key_label='typeID',
+                quantity_label='level')
+
             self.copying_time = int(sde.blueprints[self.itemID]['activities']['copying']['time'])
+
         except KeyError:
             pass
-        try:
-            self.invention_materials = dict(sde.blueprints[self.itemID]['activities']['invention']['materials'][0])
-            # self.invention_products_probability = float(sde.blueprints[self.itemID]['activities']['invention']['products'])
-            self.invention_products = dict(sde.blueprints[self.itemID]['activities']['invention']['products'][0])
+
+        try:  # --------------  invention  --------------
+            self.invention_materials = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['activities']['invention']['materials'],
+                key_label='typeID',
+                quantity_label='quantity')
+            self.invention_products, self.invention_probability = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['activities']['invention']['products'],
+                key_label='typeID',
+                quantity_label='quantity',
+                is_invention=True)
             self.invention_time = int(sde.blueprints[self.itemID]['activities']['invention']['time'])
         except KeyError:
-            pass
-        try:
-            self.manufacturing_materials = dict(sde.blueprints[self.itemID]['activities']['manufacturing']['materials'][0])
-            self.manufacturing_products = dict(sde.blueprints[self.itemID]['activities']['manufacturing']['products'][0])
-            self.manufacturing_skills = dict(sde.blueprints[self.itemID]['activities']['manufacturing']['skills'][0])
+            print()
+
+        try:  # --------------  manufacturing  --------------
+            self.manufacturing_materials = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['activities']['manufacturing']['materials'],
+                key_label='typeID',
+                quantity_label='quantity')
+            self.manufacturing_products = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['activities']['manufacturing']['products'],
+                key_label='typeID',
+                quantity_label='quantity')
+            self.manufacturing_skills = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['activities']['manufacturing']['skills'],
+                key_label='typeID',
+                quantity_label='level')
             self.manufacturing_time = int(sde.blueprints[self.itemID]['activities']['manufacturing']['time'])
         except KeyError:
             pass
-        try:
-            self.research_material_materials = dict(sde.blueprints[self.itemID]['research_material']['materials'][0])
-            self.research_material_skills = dict(sde.blueprints[self.itemID]['research_material']['skills'][0])
+
+        try:  # --------------  research material  --------------
+            self.research_material_materials = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['research_material']['materials'],
+                key_label='typeID',
+                quantity_label='quantity')
+            self.research_material_skills = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['research_material']['skills'],
+                key_label='typeID',
+                quantity_label='level')
             self.research_material_time = int(sde.blueprints[self.itemID]['research_material']['time'])
         except KeyError:
             pass
-        try:
-            self.research_time_materials = dict(sde.blueprints[self.itemID]['research_time']['materials'][0])
-            self.research_time_skills = dict(sde.blueprints[self.itemID]['research_time']['skills'][0])
+
+        try:  # --------------  research time  --------------
+            self.research_time_materials = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['research_time']['materials'],
+                key_label='typeID',
+                quantity_label='quantity')
+
+            self.research_time_skills = self.research_material_skills = self.translate_to_dict(
+                requirement_list=sde.blueprints[self.itemID]['research_time']['skills'],
+                key_label='typeID',
+                quantity_label='level')
+
             self.research_time_time = int(sde.blueprints[self.itemID]['research_time']['time'])
         except KeyError:
             pass
-        try:
+
+        try:  # --------------  other  --------------
             self.blueprintTypeID = int(sde.blueprints[self.itemID]['blueprintTypeID'])
             self.maxProductionLimit = int(sde.blueprints[self.itemID]['maxProductionLimit'])
         except KeyError:
             pass
 
-    def fetch_bp_data(self):
-        """ load info from SDE """
-        # if sde == None:
-        #     sde = SDE()
-        #     print('Loading Blueprints to SDE')
-        #     sde.import_pickle('blueprints')
-        try:
-            bpDict = SDE.blueprints[self.bpID]
-        except KeyError:
-            print('invalid BP ID')
-
-        for key in bpDict:
-            setattr(self, key, bpDict[key])
-
-        self.product = self.activities['manufacturing']['products'][0]['typeID']
-        self.product_quantity = self.activities['manufacturing']['products'][0]['quantity']
-
-    def get_manufacturing_materials(self, runs=1, out='ID'):
-        """ returns materials required for n runs"""
-        requirement_list = self.activities['manufacturing']['materials']
+    def translate_to_dict(self, requirement_list, key_label, quantity_label, is_invention=False):
+        """ returns a dictionary with a more usable structure than what offered by sde.
+        if is_invention is true returns also a float for invention probability"""
         requirement_dict = {}
+        probability = 0.0
         for item in requirement_list:
-            quantity = item['quantity'] * runs
-            if out == 'ID':
-                requirement_dict[item['typeID']] = [quantity]
-            elif out == 'name':
-                name = SDE.invTypes[item['typeID']]['typeName']
-                requirement_dict[name] = quantity
-        return requirement_dict
-
-
-# %% Database Management
-
+            requirement_dict[item[key_label]] = item[quantity_label]
+            # if it is an invention bp, return also probability
+            if is_invention:
+                probability = float(item['probability'])
+            return requirement_dict, probability
+        else:
+            return requirement_dict
 
 
 if __name__ == '__main__':
