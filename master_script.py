@@ -22,7 +22,7 @@ def main():
     db.import_quick()
     print('\n\n\n')
 
-    name = 'caracal'
+    name = 'enyo'
 
     ID = db.get_ID_from_name(name)
     item = EVEItem(ID, db)
@@ -33,7 +33,7 @@ def main():
     material_list = itemBP.manufacturing_materials
     print('Production Materials:')
 
-    for ID in material_list:
+    for ID in material_list:  # todo: implement as function, add category separation
         mat = EVEItem(int(ID), db)
         quantity = material_list[ID]
         print('- {0} \t {1}'.format(mat.name, quantity))
