@@ -4,7 +4,8 @@ Created on Sat May 20 17:10:26 2017
 
 @author: Steinn Ymir
 """
-from library import indy, gfs, gui, data
+from library import gfs, gui, data
+from library.indy import EVEItem, Blueprint
 from PyQt5 import QtGui as qg  # (the example applies equally well to PySide)
 from PyQt5 import QtWidgets as qw
 from PyQt5 import QtCore as qc
@@ -13,30 +14,44 @@ import os
 
 
 def main():
-    # timer = gfs.Timer()
-    # timer.tic()
-    #
+
+    timer = gfs.Timer()
+    timer.tic()
+
     db = data.SDE()
+    db.import_quick()
+    print('\n\n\n')
 
-    #
-    # sde.import_quick()
-    #
-    # # sde.import_pickle('blueprints')
-    # print(sde.blueprints[28675])
-    # print(sde.invTypes[28675])
-    # timer.toc_end()
-    #
-    # test_bp = indy.Blueprint(681, sde)
-    # test_bp.printName()
-    # test_bp.fetch_bp_data()
-    # # print(test_bp.activities)
-    # materials = test_bp.get_manufacturing_materials(out='name')
-    # print(materials)
+    name = 'caracal'
 
-    project_path = os.path.dirname(os.path.realpath(__file__))
-    newpath = os.path.dirname(project_path)
-    newerpath = os.path.dirname(newpath)
-    print(newerpath)
+    ID = db.get_ID_from_name(name)
+    item = EVEItem(ID, db)
+    print()
+    itemBPID = item.get_blueprintID()
+    itemBP = Blueprint(itemBPID, db)
+    item.printName()
+    material_list = itemBP.manufacturing_materials
+    print('Production Materials:')
+
+    for ID in material_list:
+        mat = EVEItem(int(ID), db)
+        quantity = material_list[ID]
+        print('- {0} \t {1}'.format(mat.name, quantity))
+
+    print('parent bp: ' + str(itemBP.name))
+    print(item.basePrice)
+    market = data.Market()
+    #market.update_marketData()
+    cost = market.get_min_sellprice(item.itemID)
+    print('{0} minimum cost is {1} ISK'.format(item.name,cost))
+
+
+    timer.toc()
+    #
+    # project_path = os.path.dirname(os.path.realpath(__file__))
+    # newpath = os.path.dirname(project_path)
+    # newerpath = os.path.dirname(newpath)
+    # print(newerpath)
 
 
 def launchGUI():

@@ -19,24 +19,21 @@ from library import gfs
 
 def main():
     """ this refreshes import of data from yaml sde to pickle format"""
-    sde = SDE()
-    sde.import_quick()
-    # dbList = ['blueprints', 'typeIDs']
-    # # import yaml / csv and dump pickle
-    # sde.export_multiple_pickle(dbList)
-    name = sde.typeIDs[34]['name']['en']
-
-    ID = sde.get_ID_from_name('condor')
-
-    print(sde.get_parent_blueprint(ID))
+    # sde = SDE()
+    # sde.import_quick()
+    # # dbList = ['blueprints', 'typeIDs']
+    # # # import yaml / csv and dump pickle
+    # # sde.export_multiple_pickle(dbList)
+    # name = sde.typeIDs[34]['name']['en']
+    #
+    # ID = sde.get_ID_from_name('condor')
+    #
+    # print(sde.get_blueprintID(ID))
 
     requestURL = 'https://api.eveonline.com/corp/AccountBalance.xml.aspx?keyID=3287371&vCode=U3gp6wIb3MnLOeRpCKlqk4eL2fF4Tz4cPyBFdES85FUcFp6KfrFPCMOHrUjsTpmO'
     requestURL = 'https://api.eveonline.com/corp/Blueprints.xml.aspx?KeyID=3289868&vCode=34Gvs33mzfGvPUv3d2vXENhRbrgtEGdqAD0LXYGpJ6kI2Q38uvbUSXaqoTM9G111'
     market_api = 'https://api.eve-marketdata.com/api/item_prices2.xml?char_name=demo&region_ids=10000002&buysell=s'
 
-    esi = ESI()
-    data = esi.get_market_data(34)
-    print(data[34])
 
 
 
@@ -50,6 +47,17 @@ def main():
     # for s in itemlist:
     #     print(s.attributes['name'].value)
 
+
+    market = Market()
+    #market.update_marketData()
+
+    print(len(market.data[34].keys()))
+
+    # market2.load_marketData()
+    item = '3332'
+
+    cost = market.get_min_sellprice(3332)
+    print('{0} minimum cost is {1} ISK'.format(item,cost))
 
 class SDE(object):
     """ Contains a series of dictionaries containing necessary sde data"""
@@ -227,7 +235,7 @@ class SDE(object):
             except KeyError:
                 pass
 
-    def get_parent_blueprint(self, itemID):  # todo: Fix me
+    def get_blueprintID(self, itemID):  # todo: Fix me
         """ returns the blueprintID that produces the item with given itemID
         :return: int
         """
@@ -315,6 +323,7 @@ class API(object):
                          }
 
     def update_AssetList(self):  # todo: add cachedUntill check
+                                 # todo: check keys for optimized data import
         self.AssetList = self.fetch_eveapi_data('AssetList')
 
     def update_Blueprints(self):
@@ -343,7 +352,7 @@ class API(object):
                   '&vCode=' + self.credentials[char]['vCode'])
         return url
 
-    def fetch_eveapi_data(self, api_type, dict_key=None):  # todo: check if ...
+    def fetch_eveapi_data(self, api_type, dict_key=None):
 
         """ get data from api"""
         url = self.get_api_url(api_type, 'Pax Correl')
@@ -384,16 +393,74 @@ class ESI(object):  # todo: find out how to make authorized requests
     def __init__(self):
         """ """
         self.url_serverStatus = 'https://esi.tech.ccp.is/latest/status/?datasource=tranquility&user_agent=eveindytool'
-
+        self.DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'
         self.root = 'https://esi.tech.ccp.is/latest/'
-        self.user_agent = 'eveindytool_ingame_Pax_Correl'
+        self.user_agent = 'eveindytool_Pax_Correl'
+        DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # comment when at home
 
-        self.marketData = {}
+
+
+
+
+    def fetch_esi_data(self, url=None):  # todo: cached time check and error management
+
+        if url is None:
+            url = self.url_serverStatus
+        j = request.urlopen(url)
+        data = json.load(j)
+        return data
+
+
+class Market(ESI):
+    """ """
+    def __init__(self):
+        super().__init__()
+        self.data = {}
+        try:
+            self.load_marketData()
+        except EOFError:
+            pass
+
+    def get_min_sellprice(self, item_id, stationID=60003760):  # todo: expand functionalities as min volume etc
+        """ returns the minimum sell price for given item_id"""
+        minprice = 999999999999
+        for key in self.data[item_id]:
+            if not self.data[item_id][key]['is_buy_order']:
+                price = self.data[item_id][key]['price']
+                loc = self.data[item_id][key]['location_id']
+                if loc == stationID:  # if it is in jita 4-4
+                    minprice = min([minprice, price])
+        return minprice
+
+
+
+
+    def load_marketData(self):
+        filePath = self.DB_LOCATION + 'marketdata.p'
+        with open(filePath, 'rb') as f:
+            self.data = pickle.load(f)
 
     def update_marketData(self):
-        self.marketData = self.get_market_data()
+        """ update from web and dump to pickle database"""
+        data = self.get_market_data()
+        print(type(data))
+        print(data)
+        self.data = data
+        filePath = self.DB_LOCATION + 'marketdata.p'
 
-    def get_market_data(self, itemID=None, location=10000002, ordertype='sell', maxpages=0):
+        print('dumping data to ' + filePath)
+        with open(filePath, 'wb+') as f:
+            pickle.dump(data,f)
+
+    def import_price_history(self, type_id, location=10000002):
+        """ get price statistics for given item in given location, default is The Forge"""
+
+        request_url = (self.root + 'markets' + str(location) +
+                       'history/?datasource=tranquility&type_id=' +
+                       type_id + '&user_agent=' + self.user_agent)
+        return self.fetch_esi_data(request_url)
+
+    def get_market_data(self, itemID=None, location=10000002, ordertype='all', maxpages=0):
         """ return dict of full market data,
         location: default location The Forge
         ordertype: 'buy' 'sell' or 'all' - only works when typeID is given
@@ -424,40 +491,35 @@ class ESI(object):  # todo: find out how to make authorized requests
                 got_empty_page = True
             for item in result:
                 data_list.append(item)
-        print(len(data_list))
+        print(str(len(data_list)) + ' market entries imported.')
 
         # sort results in a better dictionary
         for item in data_list:
-            if item['is_buy_order'] is True:
-                try:
-                    entrynumber = len(data_dict[item['type_id']]['buy'].keys())
-                    data_dict[item['type_id']]['buy'][entrynumber + 1] = item
-                except KeyError:
-                    data_dict[item['type_id']] = {'buy': {0: item}}
-            elif item['is_buy_order'] is False:
-                try:
-                    entrynumber = len(data_dict[item['type_id']]['sell'].keys())
-                    data_dict[item['type_id']]['sell'][entrynumber + 1] = item
-                except KeyError:
-                    data_dict[item['type_id']] = {'sell': {0: item}}
+            try:
+                num = len(data_dict[item['type_id']].keys())
+                data_dict[item['type_id']][num + 1] = item
+            except KeyError:
+                data_dict[item['type_id']] = {1: item}
+        print(data_dict)
+        #
+        #
+        # for item in data_list:
+        #     if item['is_buy_order']:
+        #         try:
+        #             buynum = len(data_dict[item['type_id']]['buy'].keys())
+        #             data_dict[item['type_id']]['buy'][str(buynum + 1)] = item
+        #         except KeyError:
+        #             data_dict[item['type_id']] = {'buy': {'0': item}}
+        #     else:
+        #         try:
+        #             sellnum = len(data_dict[item['type_id']]['sell'].keys())
+        #             data_dict[item['type_id']]['sell'][str(sellnum + 1)] = item
+        #         except KeyError:
+        #             data_dict[item['type_id']] = {'sell': {'0': item}}
         return data_dict
-
-    def import_price_history(self, type_id, location=10000002):
-        """ get price statistics for given item in given location, default is The Forge"""
-
-        request_url = (self.root + 'markets' + str(location) +
-                       'history/?datasource=tranquility&type_id=' +
-                       type_id + '&user_agent=' + self.user_agent)
-        return self.fetch_esi_data(request_url)
-
-    def fetch_esi_data(self, url=None):  # todo: cached time check and error management
-
-        if url is None:
-            url = self.url_serverStatus
-        j = request.urlopen(url)
-        data = json.load(j)
-        return data
 
 
 if __name__ == '__main__':
+    DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # comment when at home
+
     main()

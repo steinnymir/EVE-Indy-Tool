@@ -21,16 +21,20 @@ def main():
     db.import_quick()
     print('\n\n\n')
 
-    name = 'condor'
+    name = 'scourge heavy missile'
 
     ID = db.get_ID_from_name(name)
     item = EVEItem(ID, db)
-    print(ID)
-    itemBP = item.get_parent_blueprint()
-    print('parent bp: ' + str(itemBP))
-
+    print()
+    itemBPID = item.get_blueprintID()
+    itemBP = EVEItem(itemBPID, db)
     item.printName()
+    print('parent bp: ' + str(itemBP.name))
     print(item.basePrice)
+    market = data.Market()
+    cost = market.get_min_sellprice(item.itemID)
+    print('{0} minimum cost is {1} ISK'.format(item.name,cost))
+
 
     timer.toc()
 
@@ -134,9 +138,9 @@ class EVEItem(object):
                 except KeyError:
                     pass
 
-    def get_parent_blueprint(self):
+    def get_blueprintID(self):
         """ :returns itemID of blueprint that would produce this item"""
-        return self.sde.get_parent_blueprint(self.itemID)
+        return self.sde.get_blueprintID(self.itemID)
 
 
 class Blueprint(EVEItem):
@@ -281,6 +285,8 @@ class Blueprint(EVEItem):
             # if it is an invention bp, return also probability
             if is_invention:
                 probability = float(item['probability'])
+
+        if is_invention:
             return requirement_dict, probability
         else:
             return requirement_dict
