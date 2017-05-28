@@ -4,8 +4,7 @@ Created on Sat May 20 17:02:12 2017
 
 @author: Stymir
 """
-from library import sde, gfs
-import pprint
+from library import data, gfs
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -18,62 +17,22 @@ def main():
     timer = gfs.Timer()
     timer.tic()
 
-    # test_bp = Blueprint(28675)
-    # test_bp.printName()
-    # test_bp.fetch_bp_data()
-    # print(test_bp.get_manufacturing_materials(20))
-
-    # sde = SDE()
-    # sde.import_data('blueprints')
-    # sde.export_pickle('blueprints')
-    #
-    # timer.toc()
-
-    db = sde.SDE()
-
+    db = data.SDE()
     db.import_quick()
     print('\n\n\n')
-    # # test change
-    # itemList = [820, 822]
-    # materials = {}
-    # value = 0
-    # for item in itemList:
-    #     bp = Blueprint(item, db)
-    #     bp.printName()
-    #     print('invention probability: ' + str(bp.invention_probability))
-    #     if bp.basePrice is not None:
-    #         value += bp.basePrice
-    #     try:
-    #         for key in bp.manufacturing_materials:
-    #             try:
-    #                 value = bp.manufacturing_materials[key]
-    #                 materials[key] += value
-    #             except KeyError:
-    #                 materials[key] = value
-    #     except TypeError:
-    #         pass
 
     name = 'condor'
 
     ID = db.get_ID_from_name(name)
+    item = EVEItem(ID, db)
     print(ID)
-    itemBP = db.get_parent_BP(ID)
+    itemBP = item.get_parent_blueprint()
     print('parent bp: ' + str(itemBP))
-    item = EVEItem(ID,db)
-    item.printName
+
+    item.printName()
     print(item.basePrice)
 
-
     timer.toc()
-    # timer.reset()
-    # timer.tic()
-    #
-    # for item in itemList:
-    #     bp = Blueprint(30245)
-    #     # bp.printName()
-    #     # print(bp.manufacturing_materials)
-    #
-    # timer.toc()
 
 
 class MassProduction(object):
@@ -83,7 +42,7 @@ class MassProduction(object):
         """ init attributes"""
         self.materials_list = {}
 
-    def get_manufacturing_materials_list(self, itemList):
+    def get_manufacturing_materials_list(self, itemList):  # todo: make me
         """ calculate list of required materials from a list of bpIDs.
         :type itemList: list of itemIDs of blueprints.
         :return materials_dict:
@@ -94,8 +53,8 @@ class MassProduction(object):
             bp.printName()
             try:  # check whether itemID is a blueprint with material requirement for manufacturing
                 for key in bp.manufacturing_materials:
+                    quantity = bp.manufacturing_materials[key]
                     try:
-                        quantity = bp.manufacturing_materials[key]
                         self.materials_list[key] += quantity
                     except KeyError:  # if key (material) not present yet, create it
                         self.materials_list[key] = quantity
@@ -110,7 +69,7 @@ class EVEItem(object):
         """ initialzie"""
         self.itemID = itemID
         self.itemName = None
-        self._sde = SDE  # the full database
+        self.sde = SDE  # the full database
 
         self.attr_list = []
         self.typeIDs_attr_list = ['basePrice', 'marketGroupID', 'capacity', 'description',
@@ -151,15 +110,15 @@ class EVEItem(object):
     def initialize_typeIDs(self):
         """ Fetch all data from typeIDs"""
 
-        if self._sde is None:
+        if self.sde is None:
             print('WARNING: SDE manually imported for each item. Heavy computation time required.')
-            self._sde = sde.SDE()
-            self._sde.import_quick()
+            self.sde = data.SDE()
+            self.sde.import_quick()
 
         for key in self._typeIDs_attr_list_types:
             for attribute in self._typeIDs_attr_list_types[key]:
                 try:
-                    value = self._sde.typeIDs[self.itemID][attribute]
+                    value = self.sde.typeIDs[self.itemID][attribute]
                     if key == 'int':
                         value = int(value)
                     elif key == 'dict':
@@ -175,9 +134,9 @@ class EVEItem(object):
                 except KeyError:
                     pass
 
-    def get_parent_blueprintID(self):
+    def get_parent_blueprint(self):
         """ :returns itemID of blueprint that would produce this item"""
-        pass
+        return self.sde.get_parent_blueprint(self.itemID)
 
 
 class Blueprint(EVEItem):
@@ -225,12 +184,11 @@ class Blueprint(EVEItem):
 
         self.initialize_BP()
 
-
     def initialize_BP(self, sde=None):
         """ initializes all BP related attributes"""
 
         if sde is None:
-            sde = self._sde
+            sde = self.sde
 
         try:  # --------------  copying  --------------
             self.copying_materials = self.translate_to_dict(

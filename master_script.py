@@ -4,7 +4,7 @@ Created on Sat May 20 17:10:26 2017
 
 @author: Steinn Ymir
 """
-from library import indy, gfs, gui, sde
+from library import indy, gfs, gui, data
 from PyQt5 import QtGui as qg  # (the example applies equally well to PySide)
 from PyQt5 import QtWidgets as qw
 from PyQt5 import QtCore as qc
@@ -16,7 +16,7 @@ def main():
     # timer = gfs.Timer()
     # timer.tic()
     #
-    db = sde.SDE()
+    db = data.SDE()
 
     #
     # sde.import_quick()
