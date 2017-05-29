@@ -5,7 +5,6 @@ Created on Sat May 20 17:02:12 2017
 @author: Stymir
 """
 from library import data, gfs
-
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -137,6 +136,9 @@ class EVEItem(object):
                     setattr(self, attribute, value)
                 except KeyError:
                     pass
+
+    def intitialize_(self): # todo: add for all used databases, primary and secondary
+        pass
 
     def get_blueprintID(self):
         """ :returns itemID of blueprint that would produce this item"""
@@ -291,6 +293,8 @@ class Blueprint(EVEItem):
         else:
             return requirement_dict
 
+    def get_invention_parent_bp(self): # todo: make this function
+        pass
 
 if __name__ == '__main__':
     main()

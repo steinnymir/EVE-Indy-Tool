@@ -68,45 +68,25 @@ class SDE(object):
         DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # comment when at home
 
         self.DB_LOCATION_CSV = 'D:/Documents/py_code/EVE_database/' + 'csv/'
-        self.DB_LOCATION_YAML = 'D:/Documents/py_code/EVE_database/' + 'sde/fsd/'
+        self.DB_LOCATION_PRIMARY = 'D:/Documents/py_code/EVE_database/' + 'sde/fsd/'
+        self.DB_LOCATION_SECONDARY = 'D:/Documents/py_code/EVE_database/' + 'sde/bsd/'  # todo: implement secondary import
+
         self.DB_LOCATION_PICKLE = DB_LOCATION
-        self.QUICK_IMPORT_LIST = ['typeIDs', 'blueprints']
+        self.QUICK_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs')
+        self.PRIMARY_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs')
+        self.SECONDARY_IMPORT_LIST = ('invMarketGroups', 'invMetaGroups','invMetaTypes','ADD MORE' 'ram...')
 
         self.db_list = []
-
+        # primary
+        self.typeIDs = None
         self.blueprints = None
-        self.invCategories = None
-        self.invGroups = None
+        self.categoryIDs = None
+        self.groupIDs = None
+        # secondary
         self.invMetaGroups = None
         self.invMetaTypes = None
         self.invTypes = None
-        self.typeIDs = None
-
-        self.db_coreIndy = ['invTypes',
-                            'invCategories',
-                            'invGroups',
-                            'invMetaTypes',
-                            'invMetaGroups',
-                            'blueprints']
-
-        self.db_coreIndy_old = ['invTypes',
-                                'invCategories',
-                                'invGroups',
-                                'invMetaTypes',
-                                'invMetaGroups',
-                                'industryActivity',
-                                'industryActivityMaterials',
-                                'industryActivityProbabilities']
-
-        self.activityTypeID = {0: 'None',
-                               1: 'Manufacturing',
-                               2: 'Researching Technology',
-                               3: 'Researching Time Efficiency',
-                               4: 'Researching Material Efficiency',
-                               5: 'Copying',
-                               6: 'Duplicating',
-                               7: 'Reverse Engineering',
-                               8: 'Invention'}
+        # todo: add more secondary imports
 
     def import_data(self, dbName):
         """ imports data from a database file (csv or yaml)"""
@@ -172,13 +152,13 @@ class SDE(object):
         if ext == 'yaml':
             return self.DB_LOCATION_CSV + db_name + '.' + ext
         elif ext == 'csv':
-            return self.DB_LOCATION_YAML + db_name + '.' + ext
+            return self.DB_LOCATION_PRIMARY + db_name + '.' + ext
         else:
             return 'Incorrect file extension.'
 
     def get_data_yaml(self, db_name):
         """ imports a YAML database to same name attribute"""
-        with  open(self.DB_LOCATION_YAML + db_name + '.yaml', 'r', encoding="utf8") as f:
+        with  open(self.DB_LOCATION_PRIMARY + db_name + '.yaml', 'r', encoding="utf8") as f:
             data = yaml.load(f)
         return data
 
@@ -278,7 +258,7 @@ class SDE(object):
                 self.data[key][header] = ws.cell(row=row_i, column=col_i).value
 
 
-class API(object):
+class API(object):  # todo: transfer api data to login.ini
     """ """
 
     def __init__(self):
@@ -520,6 +500,6 @@ class Market(ESI):
 
 
 if __name__ == '__main__':
-    DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # comment when at home
+    DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # todo: remove if not used
 
     main()

@@ -6,7 +6,7 @@ Created on Sat May 20 17:10:26 2017
 """
 from library import gfs, gui, data
 from library.indy import EVEItem, Blueprint
-from PyQt5 import QtGui as qg  # (the example applies equally well to PySide)
+from PyQt5 import QtGui as qg
 from PyQt5 import QtWidgets as qw
 from PyQt5 import QtCore as qc
 import sys
@@ -25,19 +25,24 @@ def main():
     name = 'enyo'
 
     ID = db.get_ID_from_name(name)
+
     item = EVEItem(ID, db)
-    print()
+
     itemBPID = item.get_blueprintID()
     itemBP = Blueprint(itemBPID, db)
     item.printName()
     material_list = itemBP.manufacturing_materials
     print('Production Materials:')
-
+    market = data.Market()
+    totalcost = 0
     for ID in material_list:  # todo: implement as function, add category separation
         mat = EVEItem(int(ID), db)
         quantity = material_list[ID]
-        print('- {0} \t {1}'.format(mat.name, quantity))
+        cost = market.get_min_sellprice(mat.itemID) * quantity
+        print('- {0} \t {1} \t {2}'.format(mat.name, quantity, cost))
+        totalcost += cost
 
+    print('total cost: ' + str(totalcost))
     print('parent bp: ' + str(itemBP.name))
     print(item.basePrice)
     market = data.Market()
@@ -67,6 +72,5 @@ def launchGUI():
 
 if __name__ == '__main__':
 
-
     main()
-    # launchGUI()
+    launchGUI()

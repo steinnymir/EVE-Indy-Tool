@@ -4,7 +4,7 @@ Created on Sun May 21 01:42:48 2017
 
 @author: Steinn Ymir
 """
-from . import gfs, indy
+from . import gfs, indy, data
 #from lib import indy, gfs
 from PyQt5 import QtGui as qg
 from PyQt5 import QtWidgets as qw
@@ -45,7 +45,7 @@ class BPcalc_GUI(qw.QWidget):
     def __init__(self):
         super().__init__()
         self.makeLayout()
-        self.sde = indy.SDE()
+        self.sde = data.SDE()
         self.initialize_SDE
 
     def makeLayout(self):
