@@ -154,7 +154,7 @@ class EVEItem(object):
                 except KeyError:
                     pass
 
-    def initialize_groupIDs(self):  # todo: add for all used databases, primary and secondary
+    def initialize_groupIDs(self):
         """ """
         self.categoryID = self.sde.groupIDs[self.groupID]['categoryID']
         self.fittableNonSingleton = self.sde.groupIDs[self.groupID]['fittableNonSingleton']
@@ -164,7 +164,7 @@ class EVEItem(object):
             pass
         self.groupName = self.sde.groupIDs[self.groupID]['name']['en']
 
-    def initialize_categoryIDs(self): # todo: add for all used databases, primary and secondary
+    def initialize_categoryIDs(self):
         """" """
         self.categoryName = self.sde.categoryIDs[self.categoryID]['name']['en']
         try:
@@ -218,7 +218,7 @@ class Blueprint(EVEItem):
         self.research_time_time = None
         self.blueprintTypeID = None
         self.maxProductionLimit = None
-
+            # todo : add info from ram?
         self.initialize_BP()
 
     def initialize_BP(self, sde=None):
