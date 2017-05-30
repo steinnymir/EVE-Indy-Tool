@@ -17,10 +17,10 @@ def main():
     timer.tic()
 
     db = data.SDE()
-    db.import_quick()
+    db.load_all()
     print('\n\n\n')
 
-    name = 'scourge heavy missile'
+    name = 'widow'
 
     ID = db.get_ID_from_name(name)
     item = EVEItem(ID, db)
@@ -33,6 +33,8 @@ def main():
     market = data.Market()
     cost = market.get_min_sellprice(item.itemID)
     print('{0} minimum cost is {1} ISK'.format(item.name,cost))
+    print(item.categoryName)
+    print(item.groupName)
 
 
     timer.toc()
@@ -68,11 +70,16 @@ class MassProduction(object):
 class EVEItem(object):
     """ an object in new eden """
 
-    def __init__(self, itemID, SDE=None):
+    def __init__(self, itemID, sde=None):
         """ initialzie"""
         self.itemID = itemID
-        self.itemName = None
-        self.sde = SDE  # the full database
+
+        if sde == None:
+            print('importing SDE, Please use program wide sde for better performance.')
+            self.sde = data.SDE()
+        else:
+            self.sde = sde
+
 
         self.attr_list = []
         self.typeIDs_attr_list = ['basePrice', 'marketGroupID', 'capacity', 'description',
@@ -103,8 +110,19 @@ class EVEItem(object):
         self.soundID = None
         self.traits = None
         self.volume = None
+        #from groupIDs
+        self.categoryID = None
+        self.fittableNonSingleton = None
+        self.iconID = None
+        self.groupName = None
+        #from categoryIDs
+        self.categoryName = None
+        self.categoriIconID = None
 
         self.initialize_typeIDs()
+        self.initialize_groupIDs()
+        self.initialize_categoryIDs()
+
 
     def printName(self):
         """ prints ItemID and item name"""
@@ -116,7 +134,6 @@ class EVEItem(object):
         if self.sde is None:
             print('WARNING: SDE manually imported for each item. Heavy computation time required.')
             self.sde = data.SDE()
-            self.sde.import_quick()
 
         for key in self._typeIDs_attr_list_types:
             for attribute in self._typeIDs_attr_list_types[key]:
@@ -137,9 +154,23 @@ class EVEItem(object):
                 except KeyError:
                     pass
 
-    def intitialize_(self): # todo: add for all used databases, primary and secondary
-        pass
+    def initialize_groupIDs(self):  # todo: add for all used databases, primary and secondary
+        """ """
+        self.categoryID = self.sde.groupIDs[self.groupID]['categoryID']
+        self.fittableNonSingleton = self.sde.groupIDs[self.groupID]['fittableNonSingleton']
+        try:
+            self.iconID = self.sde.groupIDs[self.groupID]['iconID']
+        except KeyError:
+            pass
+        self.groupName = self.sde.groupIDs[self.groupID]['name']['en']
 
+    def initialize_categoryIDs(self): # todo: add for all used databases, primary and secondary
+        """" """
+        self.categoryName = self.sde.categoryIDs[self.categoryID]['name']['en']
+        try:
+            self.categoriIconID = self.sde.groupIDs[self.categoryID]['iconID']
+        except KeyError:
+            pass
     def get_blueprintID(self):
         """ :returns itemID of blueprint that would produce this item"""
         return self.sde.get_blueprintID(self.itemID)

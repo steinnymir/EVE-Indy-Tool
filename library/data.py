@@ -2,79 +2,72 @@
 """
 Created on Sat May 20 17:02:12 2017
 
-@author: Stymir
+@author: Steinn Ymir
 """
 
 import csv
 import json
+import os
+import sys
 import pickle
 from urllib import request
 from xml.dom import minidom
-
+import configparser
 import yaml
 from openpyxl import load_workbook
-
+import time
 from library import gfs
 
 
 def main():
     """ this refreshes import of data from yaml sde to pickle format"""
-    # sde = SDE()
-    # sde.import_quick()
-    # # dbList = ['blueprints', 'typeIDs']
-    # # # import yaml / csv and dump pickle
-    # # sde.export_multiple_pickle(dbList)
-    # name = sde.typeIDs[34]['name']['en']
+    timer = gfs.Timer()
+    timer.tic()
+    sde = SDE()
+
+    # print('\nimporting all data:\n')
+    # sde.import_all_yaml()
+    # timer.toc()
+    # print('\ndumping all data:\n')
+    # sde.dump_all_as_pickle()
+    # timer.toc()
+    # print('\ndump successful\n')
+    # sde2 = SDE()
+    # print('\nLoading Pickles\n')
     #
-    # ID = sde.get_ID_from_name('condor')
-    #
-    # print(sde.get_blueprintID(ID))
-
-    requestURL = 'https://api.eveonline.com/corp/AccountBalance.xml.aspx?keyID=3287371&vCode=U3gp6wIb3MnLOeRpCKlqk4eL2fF4Tz4cPyBFdES85FUcFp6KfrFPCMOHrUjsTpmO'
-    requestURL = 'https://api.eveonline.com/corp/Blueprints.xml.aspx?KeyID=3289868&vCode=34Gvs33mzfGvPUv3d2vXENhRbrgtEGdqAD0LXYGpJ6kI2Q38uvbUSXaqoTM9G111'
-    market_api = 'https://api.eve-marketdata.com/api/item_prices2.xml?char_name=demo&region_ids=10000002&buysell=s'
-
-
-
-
-    # apidata = API()
-    # apis = list(apidata.api_URLs.keys())
-    # print(apis)
-    # for api in apis:
-    #     apidata.fetch_eveapi_data(api)
-
-
-    # for s in itemlist:
-    #     print(s.attributes['name'].value)
-
+    # sde2.load_all()
+    # print('\nloading complete\n')
+    # timer.toc()
+    # api = API()
+    # print(api.apikey)
+    # api.iterate_keys()
+    # print(api.apikey)
+    # api.update_All()
 
     market = Market()
-    #market.update_marketData()
+    market.update_marketData()
 
-    print(len(market.data[34].keys()))
+    timer.toc()
 
-    # market2.load_marketData()
-    item = '3332'
-
-    cost = market.get_min_sellprice(3332)
-    print('{0} minimum cost is {1} ISK'.format(item,cost))
 
 class SDE(object):
     """ Contains a series of dictionaries containing necessary sde data"""
 
     def __init__(self):
+        """ initialize attributes where to store all sde data"""
+        parser = configparser.ConfigParser()
+        parser.read('../settings.ini')
+        self.DB_LOCATION_CSV = parser.get('test', 'DB_LOCATION_CSV')
+        self.DB_LOCATION_PRIMARY = parser.get('test', 'DB_LOCATION_PRIMARY')
+        self.DB_LOCATION_SECONDARY = parser.get('test', 'DB_LOCATION_SECONDARY', )
+        self.DB_LOCATION_PICKLE = '../database/'
 
-        DB_LOCATION = '../database/'
-        DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # comment when at home
-
-        self.DB_LOCATION_CSV = 'D:/Documents/py_code/EVE_database/' + 'csv/'
-        self.DB_LOCATION_PRIMARY = 'D:/Documents/py_code/EVE_database/' + 'sde/fsd/'
-        self.DB_LOCATION_SECONDARY = 'D:/Documents/py_code/EVE_database/' + 'sde/bsd/'  # todo: implement secondary import
-
-        self.DB_LOCATION_PICKLE = DB_LOCATION
         self.QUICK_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs')
-        self.PRIMARY_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs')
-        self.SECONDARY_IMPORT_LIST = ('invMarketGroups', 'invMetaGroups','invMetaTypes','ADD MORE' 'ram...')
+        self.PRIMARY_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs', 'iconIDs')
+        self.SECONDARY_IMPORT_LIST = (
+            'invMarketGroups', 'invMetaGroups', 'invMetaTypes', 'invNames', 'invTypeMaterials', 'ramActivities',
+            'ramAssemblyLineStations', 'ramAssemblyLineTypeDetailPerCategory', 'ramAssemblyLineTypeDetailPerGroup',
+            'ramAssemblyLineTypes', 'ramInstallationTypeContents')
 
         self.db_list = []
         # primary
@@ -82,29 +75,88 @@ class SDE(object):
         self.blueprints = None
         self.categoryIDs = None
         self.groupIDs = None
+        self.iconIDs = None
         # secondary
+        self.invMarketGroups = None
         self.invMetaGroups = None
         self.invMetaTypes = None
-        self.invTypes = None
-        # todo: add more secondary imports
+        self.invNames = None
+        self.invTypeMaterials = None
+        self.ramActivities = None
+        self.ramAssemblyLineStations = None
+        self.ramAssemblyLineTypeDetailPerCategory = None
+        self.ramAssemblyLineTypeDetailPerGroup = None
+        self.ramAssemblyLineTypes = None
+        self.ramInstallationTypeContents = None
 
-    def import_data(self, dbName):
+        try:
+            self.load_all()
+        except:
+            print('No database found, please be patient for the next 5 minutes...')
+            self.import_and_export()
+
+        # todo: add more secondary imports
+    def import_and_export(self):
+        """ Import all database data from yaml and dump to pickle
+        """
+        print('\nimporting all data:\n')
+        sde.import_all_yaml()
+        timer.toc()
+        print('\ndumping all data:\n')
+        sde.dump_all_as_pickle()
+        timer.toc()
+        print('\ndump successful\n')
+
+
+    def import_all_yaml(self):
+
+        for dbName in self.PRIMARY_IMPORT_LIST:
+            filepath = self.DB_LOCATION_PRIMARY + dbName + '.yaml'
+            self.import_data(filepath)
+
+        for dbName in self.SECONDARY_IMPORT_LIST:
+            filepath = self.DB_LOCATION_SECONDARY + dbName + '.yaml'
+            self.import_data(filepath)
+
+    def dump_all_as_pickle(self):
+        """ dumps all loaded data to pickle databases"""
+        for dbName in self.PRIMARY_IMPORT_LIST:
+            if dbName is not None:
+                self.export_pickle(dbName)
+        for dbName in self.SECONDARY_IMPORT_LIST:
+            if dbName is not None:
+                self.export_pickle(dbName)
+
+    def load_all(self):
+        """ loads all available pickle format databases"""
+        dbList = self.PRIMARY_IMPORT_LIST + self.SECONDARY_IMPORT_LIST
+        for dbName in dbList:
+            self.import_pickle(dbName)
+
+    def import_data(self, dbFilepath):
         """ imports data from a database file (csv or yaml)"""
         timer = gfs.Timer()
         timer.tic()
-        if dbName in ['blueprints', 'typeIDs', 'groupIDs', 'graphicIDs']:
-            print('importing: ' + dbName + '.yaml')
-            data = self.get_data_yaml(dbName)
-        else:
-            print('importing: ' + dbName + '.csv')
+        dbName = os.path.basename(dbFilepath)
+        dbExt = dbName.split('.')[-1]
+        data = None
+        if dbExt == 'yaml':
+            print('importing: ' + dbName)
+            data = self.get_data_yaml(dbFilepath)
+        elif dbExt == 'csv':
+            print('importing: ' + dbName)
             data = self.get_data_csv(dbName)
-        setattr(self, dbName, data)
-        dt = timer.toc(out='return')
-        print('Imported {0} in {1:.3f} ms'.format(dbName, dt))
+        else:
+            print('Import failed: unrecognised format for file {}'.format(dbName))
+        if data is not None:
+            setattr(self, dbName.split('.')[0], data)
+            dt = timer.toc(out='return')
+            print('Imported {0} in {1:.3f} ms'.format(dbName, dt))
 
     def export_pickle(self, dbName):
         """ create a pickle for each database loaded"""
         filePath = self.DB_LOCATION_PICKLE + dbName + '.p'
+        print('Exporting {0} to Pickle database'.format(filePath))
         try:
             timer = gfs.Timer()
             timer.tic()
@@ -116,49 +168,24 @@ class SDE(object):
         except AttributeError:
             print('no data found with name ' + dbName)
 
-    def export_multiple_pickle(self, dbList):
-        """ import from sde and export to pickle the list of databases given """
-        for db_name in dbList:
-            print('importing: ' + db_name)
-            self.import_data(db_name)
-            print('exporting: ' + db_name)
-            self.export_pickle(db_name)
-
     def import_pickle(self, dbName):
         """ imports data from pickle dumped file"""
-        # try:
+        filePath = self.DB_LOCATION_PICKLE + dbName + '.p'
         timer = gfs.Timer()
         timer.tic()
-        print('Importing: ' + dbName)
-        filePath = self.DB_LOCATION_PICKLE + dbName + '.p'
-        with open(filePath, 'rb') as f:
-            data = pickle.load(f)
-            setattr(self, dbName, data)
-        dt = timer.toc(out='return')
-        print('Imported {0} in {1:.3f} ms'.format(dbName, dt))
+        try:
+            print('Importing: ' + dbName)
+            with open(filePath, 'rb') as f:
+                data = pickle.load(f)
+                setattr(self, dbName, data)
+            dt = timer.toc(out='return')
+            print('Imported {0} in {1:.3f} ms'.format(dbName, dt))
+        except FileNotFoundError:
+            print('Error 404: file not found - ' + filePath)
 
-    def import_quick(self):
-        """ import databases relevant for indy calculator"""
-        for dbName in self.QUICK_IMPORT_LIST:
-            self.import_pickle(dbName)
-
-    def get_filepath(self, db_name, ext):
-        """
-        :return : returns str of database file path.
-        :param db_name: name of database file to load
-        :type ext: str representing db_name file format
-
-        """
-        if ext == 'yaml':
-            return self.DB_LOCATION_CSV + db_name + '.' + ext
-        elif ext == 'csv':
-            return self.DB_LOCATION_PRIMARY + db_name + '.' + ext
-        else:
-            return 'Incorrect file extension.'
-
-    def get_data_yaml(self, db_name):
+    def get_data_yaml(self, dbFilepath):
         """ imports a YAML database to same name attribute"""
-        with  open(self.DB_LOCATION_PRIMARY + db_name + '.yaml', 'r', encoding="utf8") as f:
+        with  open(dbFilepath, 'r', encoding="utf8") as f:
             data = yaml.load(f)
         return data
 
@@ -199,11 +226,11 @@ class SDE(object):
                             val = gfs.getNum_or_Str(word)
 
                             data[key][label] = val
-        return (data)
+        return data
 
+    # ++++++++ Functionalities +++++++++++
     def get_ID_from_name(self, name):
         """ returns the itemID from a given name
-
         :return: int
         """
         itemName = ''
@@ -269,32 +296,10 @@ class API(object):  # todo: transfer api data to login.ini
         self.IndustryJobs = {}
         self.MarketOrders = {}
 
-        self.credentials = {  # todo: make character key iteration
-            'Pax Correl': {'KeyID': '3802771',
-                           'vCode': 'dJkO006gOITgaBGloymLL6DLs2Zuxt0qGHO263tTE9bHMsmfghr3HlP7ZmLZ869w'},
-            'Freyja Correl': {'KeyID': '3289868',
-                              'vCode': '34Gvs33mzfGvPUv3d2vXENhRbrgtEGdqAD0LXYGpJ6kI2Q38uvbUSXaqoTM9G111'},
-            'mamoc mant': {'KeyID': '4190790',
-                           'vCode': 'Py18Ybm98U4RimRciHEolXQ4WAABrqLmsiovtPrrGfmByXzVDlW8uTWbPq8nZurA'},
-            'Steinn Ymir': {'KeyID': '3932915',
-                            'vCode': 'fOP7WYgafX0Jd3wnxIX9krC1mDfNJpiXjoiZ1lg45tVkqenSxt7e74QKhxljfjIG'},
-            'Arnok Senklis': {'KeyID': '3287371',
-                              'vCode': 'U3gp6wIb3MnLOeRpCKlqk4eL2fF4Tz4cPyBFdES85FUcFp6KfrFPCMOHrUjsTpmO'},
-            'Juliet Senklis': {'KeyID': '3932917',
-                               'vCode': 'P0F9mLsh6piP4sBdApZQK6HUUrkztqigisG6k1cN9zREv8Uf7Bjm1EsJcjDjkh3U'},
-            'Tibus Khan': {'KeyID': '4193331',
-                           'vCode': 'm9tJQS2FH6dn5tp8Aw4V6LoiFm1RNAZHJmp842hxThRCEsqsb3JLy2Ko4tIavgib'},
-            'Aerie Khan': {'KeyID': '4193333',
-                           'vCode': 'CdsX1iRif4pA3UqXtoQt65OxYr75ZGAlsJZaDRfVqooBxMk5CzVbqK3OUgjCyVQB'},
-            'Khaylin Greystar': {'KeyID': '4193336',
-                                 'vCode': 'DqrDfrJ5ZKK7w2zSkwVjjFtKqpxTaD1IpwKpK1Q1tFWzb8FdZwckNLe3QqeBsAV8'},
-            'zalatex': {'KeyID': '4193326',
-                        'vCode': 'wapB06YsJt7OpuGJBz1DoHrsVAMErFfVeAsxF6Md2rOpLok83G3zNyIFuS7ZqQFO'},
-            'Tania Redstar': {'KeyID': '4193325',
-                              'vCode': '1afM85e8AL5Zk0JE7Q4VW66sUVDYZwZCaOKv9VVXickTsk3ykEKN69a6TyqrzED3'},
-            'Aerie Bluestar': {'KeyID': '4193327',
-                               'vCode': 'FqLD4XKD9YKLplSRy8eAapKaC7E8LfnYsLn0jtpnH1Xvr2DFBHv0VZNWIVI9WDie'},
-        }
+        self.keys = {}
+        self.current_key = 1
+        self.apikey = []
+        self.iterate_keys()  # initialize api keys by selecting nex in line
         self.api_URLs = {'AssetList': "https://api.eveonline.com/corp/AssetList.xml.aspx?flat=1&",
                          'Blueprints': "https://api.eveonline.com/corp/Blueprints.xml.aspx?",
                          'MarketOrders': "https://api.eveonline.com/corp/MarketOrders.xml.aspx?",
@@ -302,8 +307,34 @@ class API(object):  # todo: transfer api data to login.ini
                          'AccountBalance': "https://api.eveonline.com/corp/AccountBalance.xml.aspx?",
                          }
 
+    def fetch_credentials(self):
+        """ get api values from keys.ini. File must be in main program directory"""
+        char_number = 12
+        parser = configparser.ConfigParser()
+        parser.read('../keys.ini')
+        for i in range(char_number):
+            name = parser.get('api', 'char{}_name'.format(i))
+            self.keys[name] = {}
+            KeyID = parser.get('api', 'char{}_KeyID'.format(i))
+            vCode = parser.get('api', 'char{}_vCode'.format(i))
+            self.keys[name][KeyID] = KeyID
+            self.keys[name][vCode] = KeyID
+
+    def iterate_keys(self):
+        """ iterate between keys to use"""
+        parser = configparser.ConfigParser()
+        parser.read('../keys.ini')
+        if self.current_key == 12:
+            self.current_key = 1
+        else:
+            self.current_key += 1
+        KeyID = parser.get('api', 'char{}_KeyID'.format(self.current_key))
+        vCode = parser.get('api', 'char{}_vCode'.format(self.current_key))
+        self.apikey = (KeyID, vCode)
+
+
     def update_AssetList(self):  # todo: add cachedUntill check
-                                 # todo: check keys for optimized data import
+        # todo: check keys for optimized data import
         self.AssetList = self.fetch_eveapi_data('AssetList')
 
     def update_Blueprints(self):
@@ -324,21 +355,19 @@ class API(object):  # todo: transfer api data to login.ini
         self.update_Blueprints()
         self.update_IndustryJobs()
         self.update_MarketOrders()
+        self.iterate_keys()
 
     def get_api_url(self, api_type, char):
         """ """
         url = str(self.api_URLs[api_type] +
-                  'keyID=' + self.credentials[char]['KeyID'] +
-                  '&vCode=' + self.credentials[char]['vCode'])
+                  'keyID=' + str(self.apikey[0]) +
+                  '&vCode=' + str(self.apikey[1]))
         return url
 
     def fetch_eveapi_data(self, api_type, dict_key=None):
 
         """ get data from api"""
         url = self.get_api_url(api_type, 'Pax Correl')
-        # if api_type == 'AssetList': # different structure, requires different method
-        #     self.fetch_assetsList()
-        # else:
 
         print('Requesting {} data from API system'.format(api_type))
         print(url)
@@ -378,10 +407,6 @@ class ESI(object):  # todo: find out how to make authorized requests
         self.user_agent = 'eveindytool_Pax_Correl'
         DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # comment when at home
 
-
-
-
-
     def fetch_esi_data(self, url=None):  # todo: cached time check and error management
 
         if url is None:
@@ -392,14 +417,18 @@ class ESI(object):  # todo: find out how to make authorized requests
 
 
 class Market(ESI):
-    """ """
+    """ the eve market"""
+
     def __init__(self):
         super().__init__()
         self.data = {}
+
         try:
             self.load_marketData()
         except EOFError:
             pass
+        except FileNotFoundError:
+            print('no market data, please update with update_marketData')
 
     def get_min_sellprice(self, item_id, stationID=60003760):  # todo: expand functionalities as min volume etc
         """ returns the minimum sell price for given item_id"""
@@ -411,9 +440,6 @@ class Market(ESI):
                 if loc == stationID:  # if it is in jita 4-4
                     minprice = min([minprice, price])
         return minprice
-
-
-
 
     def load_marketData(self):
         filePath = self.DB_LOCATION + 'marketdata.p'
@@ -430,7 +456,7 @@ class Market(ESI):
 
         print('dumping data to ' + filePath)
         with open(filePath, 'wb+') as f:
-            pickle.dump(data,f)
+            pickle.dump(data, f)
 
     def import_price_history(self, type_id, location=10000002):
         """ get price statistics for given item in given location, default is The Forge"""

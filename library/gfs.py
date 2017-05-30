@@ -25,7 +25,7 @@ class Timer(object):
         if out == 'return':
             return dt
         elif out == 'print':
-            print('last time section: ' + str(dt) + ' ms')
+            print('this took {0:3F} ms'.format(dt))
 
     def toc_end (self):
         self.timestamps.append(time.time())
