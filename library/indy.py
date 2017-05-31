@@ -15,30 +15,53 @@ def main():
 
     timer = gfs.Timer()
     timer.tic()
+    factory = Factory()
+    print(factory.sde.typeIDs[34])
 
-    db = data.SDE()
-    db.load_all()
-    print('\n\n\n')
-
-    name = 'widow'
-
-    ID = db.get_ID_from_name(name)
-    item = EVEItem(ID, db)
-    print()
-    itemBPID = item.get_blueprintID()
-    itemBP = EVEItem(itemBPID, db)
-    item.printName()
-    print('parent bp: ' + str(itemBP.name))
-    print(item.basePrice)
-    market = data.Market()
-    cost = market.get_min_sellprice(item.itemID)
-    print('{0} minimum cost is {1} ISK'.format(item.name,cost))
-    print(item.categoryName)
-    print(item.groupName)
+    # db = data.SDE()
+    # db.load_all()
+    # print('\n\n\n')
+    #
+    # name = 'widow'
+    #
+    # ID = db.get_ID_from_name(name)
+    # item = EVEItem(ID, db)
+    # print()
+    # itemBPID = item.get_blueprintID()
+    # itemBP = EVEItem(itemBPID, db)
+    # item.printName()
+    # print('parent bp: ' + str(itemBP.name))
+    # print(item.basePrice)
+    # market = data.Market()
+    # cost = market.get_min_sellprice(item.itemID)
+    # print('{0} minimum cost is {1} ISK'.format(item.name,cost))
+    # print(item.categoryName)
+    # print(item.groupName)
 
 
     timer.toc()
 
+class Indy(object):
+    """ wrapper class to give data to all EVEItem, Blueprints etc instances"""
+    sde = data.SDE()
+    market = data.Market()
+    api = data.API()
+    def __init__(self):
+        """ """
+        self.exist = True
+
+class Factory(Indy):
+    # sde = data.SDE()
+    # market = data.Market()
+    # api = data.API()
+    def __init__(self):
+        """ """
+        self.blueprints = {}
+        self.products = {}
+
+    def append_blueprint(self, bpID):
+
+        self.blueprints[bpID] = { 'obj':Blueprint(bpID), 'quantity':number}
 
 class MassProduction(object):
     """ class for managing multiple items, in production, invention or whatever """
@@ -67,8 +90,9 @@ class MassProduction(object):
                 pass
 
 
-class EVEItem(object):
+class EVEItem(Indy):
     """ an object in new eden """
+
 
     def __init__(self, itemID, sde=None):
         """ initialzie"""

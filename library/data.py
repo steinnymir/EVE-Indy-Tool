@@ -23,7 +23,8 @@ def main():
     """ this refreshes import of data from yaml sde to pickle format"""
     timer = gfs.Timer()
     timer.tic()
-    sde = SDE()
+    # sde = SDE()
+    EveData = EveData()
 
     # print('\nimporting all data:\n')
     # sde.import_all_yaml()
@@ -48,6 +49,8 @@ def main():
     market.update_marketData()
 
     timer.toc()
+
+
 
 
 class SDE(object):
