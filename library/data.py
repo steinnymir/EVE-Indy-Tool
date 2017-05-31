@@ -23,8 +23,8 @@ def main():
     """ this refreshes import of data from yaml sde to pickle format"""
     timer = gfs.Timer()
     timer.tic()
-    # sde = SDE()
-    EveData = EveData()
+    # # sde = SDE()
+    # EveData = EveData()
 
     # print('\nimporting all data:\n')
     # sde.import_all_yaml()
@@ -39,14 +39,15 @@ def main():
     # sde2.load_all()
     # print('\nloading complete\n')
     # timer.toc()
-    # api = API()
+    api = API()
+    api.update_Skills()
     # print(api.apikey)
     # api.iterate_keys()
     # print(api.apikey)
     # api.update_All()
 
-    market = Market()
-    market.update_marketData()
+    # market = Market()
+    # market.update_marketData()
 
     timer.toc()
 
@@ -106,7 +107,6 @@ class SDE(object):
         sde.dump_all_as_pickle()
         timer.toc()
         print('\ndump successful\n')
-
 
     def import_all_yaml(self):
 
@@ -294,8 +294,9 @@ class SDE(object):
                 self.data[key][header] = ws.cell(row=row_i, column=col_i).value
 
 
-class API(object):  # todo: transfer api data to login.ini
+class API(object):
     """ """
+    number_of_characters = 12
 
     def __init__(self):
         """ """
@@ -304,7 +305,7 @@ class API(object):  # todo: transfer api data to login.ini
         self.Blueprints = {}
         self.IndustryJobs = {}
         self.MarketOrders = {}
-
+        self.skills = {}
         self.keys = {}
         self.current_key = 1
         self.apikey = []
@@ -334,14 +335,26 @@ class API(object):  # todo: transfer api data to login.ini
         """ iterate between keys to use"""
         parser = configparser.ConfigParser()
         parser.read('../keys.ini')
-        if self.current_key == 12:
+        if self.current_key == self.number_of_characters:
             self.current_key = 1
         else:
             self.current_key += 1
+        name = parser.get('api', 'char{}_name'.format(self.current_key))
         KeyID = parser.get('api', 'char{}_KeyID'.format(self.current_key))
         vCode = parser.get('api', 'char{}_vCode'.format(self.current_key))
-        self.apikey = (KeyID, vCode)
+        self.apikey = (name, KeyID, vCode)
 
+    def get_key_by_character_name(self, character):
+        """ iterate between keys to use"""
+        parser = configparser.ConfigParser()
+        parser.read('../keys.ini')
+        for i in range(self.number_of_characters):
+            name = parser.get('api', 'char{}_name'.format(self.current_key))
+            KeyID = parser.get('api', 'char{}_KeyID'.format(self.current_key))
+            vCode = parser.get('api', 'char{}_vCode'.format(self.current_key))
+            if name == character:
+                return (KeyID, vCode)
+        print('no character named ' + character)
 
     def update_AssetList(self):  # todo: add cachedUntill check
         # todo: check keys for optimized data import
@@ -359,8 +372,15 @@ class API(object):  # todo: transfer api data to login.ini
     def update_AccountBalance(self):
         self.AccountBalance = self.fetch_eveapi_data('AccountBalance')
 
-    def update_Skills(self):
-        self.Skills = self.fetch_eveapi_data('Skills')  # todo: check and improve!
+    def update_Skills(self):  # todo: add characterID to keys.ini and to url in order to work!
+        """ get all api keys, and get each char's skill list into a dict"""
+        parser = configparser.ConfigParser()
+        parser.read('../keys.ini')
+        for num in range(self.number_of_characters):
+            character = parser.get('api', 'char{}_name'.format(num+1))
+            self.skills[character] = self.fetch_eveapi_data('Skills', character=character)
+
+
 
     def update_All(self):
         self.update_AccountBalance()
@@ -370,17 +390,25 @@ class API(object):  # todo: transfer api data to login.ini
         self.update_MarketOrders()
         self.iterate_keys()
 
-    def get_api_url(self, api_type, char):
+    def get_api_url(self, api_type, character=None):
         """ """
-        url = str(self.api_URLs[api_type] +
-                  'keyID=' + str(self.apikey[0]) +
-                  '&vCode=' + str(self.apikey[1]))
+        if character is None:
+            url = str(self.api_URLs[api_type] +
+                      'keyID=' + str(self.apikey[0]) +
+                      '&vCode=' + str(self.apikey[1]))
+        else:
+            self.get_key_by_character_name(character)
+            url = str(self.api_URLs[api_type] +
+                      'keyID=' + str(self.apikey[0]) +
+                      '&vCode=' + str(self.apikey[1]))
+
         return url
 
-    def fetch_eveapi_data(self, api_type, dict_key=None):  # todo: implement key switchings
+    def fetch_eveapi_data(self, api_type, character=None):  # todo: check structure
 
-        """ get data from api"""
-        url = self.get_api_url(api_type, 'Pax Correl')
+        """ get data from api.
+        structure: {dict_key = {dict_data:val,dict_data,val}}"""
+        url = self.get_api_url(api_type, character)
 
         print('Requesting {} data from API system'.format(api_type))
         print(url)
@@ -539,5 +567,4 @@ class Market(ESI):
 
 
 if __name__ == '__main__':
-
     main()
