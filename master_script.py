@@ -22,7 +22,7 @@ def main():
     db.import_quick()
     print('\n\n\n')
 
-    name = 'enyo'
+    name = 'Standup L-Set Advanced Component Manufacturing Efficiency I'
 
     ID = db.get_ID_from_name(name)
 
@@ -36,7 +36,7 @@ def main():
     market = data.Market()
     totalcost = 0
     for ID in material_list:  # todo: implement as function, add category separation
-        mat = EVEItem(int(ID), db)
+        mat = EVEItem(int(ID))
         quantity = material_list[ID]
         cost = market.get_min_sellprice(mat.itemID) * quantity
         print('- {0} \t {1} \t {2}'.format(mat.name, quantity, cost))

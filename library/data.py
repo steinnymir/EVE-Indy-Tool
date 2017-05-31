@@ -51,8 +51,6 @@ def main():
     timer.toc()
 
 
-
-
 class SDE(object):
     """ Contains a series of dictionaries containing necessary sde data"""
 
@@ -98,7 +96,6 @@ class SDE(object):
             print('No database found, please be patient for the next 5 minutes...')
             self.import_and_export()
 
-        # todo: add more secondary imports
     def import_and_export(self):
         """ Import all database data from yaml and dump to pickle
         """
@@ -134,7 +131,7 @@ class SDE(object):
         """ loads all available pickle format databases"""
         dbList = self.PRIMARY_IMPORT_LIST + self.SECONDARY_IMPORT_LIST
         for dbName in dbList:
-            self.import_pickle(dbName)
+            self.import_pickle(dbName)  # todo: initialize directly in __init__
 
     def import_data(self, dbFilepath):
         """ imports data from a database file (csv or yaml)"""
@@ -245,27 +242,36 @@ class SDE(object):
             except KeyError:
                 pass
 
-    def get_blueprintID(self, itemID):  # todo: Fix me
-        """ returns the blueprintID that produces the item with given itemID
-        :return: int
+    def get_parent_blueprintID(self, itemID):  # todo: Fix me
+        """ returns the blueprintID that produces the item with given itemID, if none, return None
         """
-        parent_tipeID = 0
         for key in self.blueprints:
             try:
                 product_list = self.blueprints[key]['activities']['manufacturing']['products']
-                for item in product_list:  # products is a list. so we need to break the dcit style and add list parser
-                    parent_tipeID = item['typeID']
-                    if parent_tipeID == itemID:
+                for item in product_list:  # products is a list. so we need to break the dict style and add list parser
+                    parent_typeID = item['typeID']
+                    if parent_typeID == itemID:
                         return key
             except KeyError:
-                pass
+                return None
 
+    def get_parent_invention_blueprintID(self, blueprintID):
+        """ return the blueprint which invented gives the input blueprintID, if none, return None"""
+        for key in self.blueprints:
+            try:
+                product_list = self.blueprints[key]['activities']['invention']['products']
+                for item in product_list:  # products is a list. so we need to break the dict style and add list parser
+                    parent_typeID = item['typeID']
+                    if parent_typeID == blueprintID:
+                        return key
+            except KeyError:
+                return None
 
 
                 # --------------- Old and deprectated methods ------------------
 
     def open_file_xlsx(self, file):
-        ''' '''
+        """ """
         wb = load_workbook(file)
         ws = wb.active
         self.name = ws['A1'].value
@@ -308,6 +314,7 @@ class API(object):  # todo: transfer api data to login.ini
                          'MarketOrders': "https://api.eveonline.com/corp/MarketOrders.xml.aspx?",
                          'IndustryJobs': "https://api.eveonline.com/corp/IndustryJobs.xml.aspx?",
                          'AccountBalance': "https://api.eveonline.com/corp/AccountBalance.xml.aspx?",
+                         'Skills': 'https://api.eveonline.com//char/Skills.xml.aspx?'
                          }
 
     def fetch_credentials(self):
@@ -352,6 +359,9 @@ class API(object):  # todo: transfer api data to login.ini
     def update_AccountBalance(self):
         self.AccountBalance = self.fetch_eveapi_data('AccountBalance')
 
+    def update_Skills(self):
+        self.Skills = self.fetch_eveapi_data('Skills')
+
     def update_All(self):
         self.update_AccountBalance()
         self.update_AssetList()
@@ -367,7 +377,7 @@ class API(object):  # todo: transfer api data to login.ini
                   '&vCode=' + str(self.apikey[1]))
         return url
 
-    def fetch_eveapi_data(self, api_type, dict_key=None):
+    def fetch_eveapi_data(self, api_type, dict_key=None):  # todo: implement key switchings
 
         """ get data from api"""
         url = self.get_api_url(api_type, 'Pax Correl')
@@ -435,7 +445,7 @@ class Market(ESI):
 
     def get_min_sellprice(self, item_id, stationID=60003760):  # todo: expand functionalities as min volume etc
         """ returns the minimum sell price for given item_id"""
-        minprice = 999999999999
+        minprice = 1000000000000
         for key in self.data[item_id]:
             if not self.data[item_id][key]['is_buy_order']:
                 price = self.data[item_id][key]['price']
@@ -529,6 +539,5 @@ class Market(ESI):
 
 
 if __name__ == '__main__':
-    DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # todo: remove if not used
 
     main()
