@@ -360,7 +360,7 @@ class API(object):  # todo: transfer api data to login.ini
         self.AccountBalance = self.fetch_eveapi_data('AccountBalance')
 
     def update_Skills(self):
-        self.Skills = self.fetch_eveapi_data('Skills')
+        self.Skills = self.fetch_eveapi_data('Skills')  # todo: check and improve!
 
     def update_All(self):
         self.update_AccountBalance()
