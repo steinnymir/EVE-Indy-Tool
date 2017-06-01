@@ -41,6 +41,8 @@ def main():
     # timer.toc()
     api = API()
     api.update_Skills()
+    for key in api.skills:
+        print(api.skills[key])
     # print(api.apikey)
     # api.iterate_keys()
     # print(api.apikey)
@@ -306,10 +308,10 @@ class API(object):
         self.IndustryJobs = {}
         self.MarketOrders = {}
         self.skills = {}
-        self.keys = {}
+        self.char_api = {}
+        self.corp_api = {}
         self.current_key = 1
         self.apikey = []
-        self.iterate_keys()  # initialize api keys by selecting nex in line
         self.api_URLs = {'AssetList': "https://api.eveonline.com/corp/AssetList.xml.aspx?flat=1&",
                          'Blueprints': "https://api.eveonline.com/corp/Blueprints.xml.aspx?",
                          'MarketOrders': "https://api.eveonline.com/corp/MarketOrders.xml.aspx?",
@@ -317,19 +319,37 @@ class API(object):
                          'AccountBalance': "https://api.eveonline.com/corp/AccountBalance.xml.aspx?",
                          'Skills': 'https://api.eveonline.com//char/Skills.xml.aspx?'
                          }
+        self.fetch_api()
+        self.fetch_api(corp=False)
 
-    def fetch_credentials(self):
+    def fetch_api(self, corp=True):
         """ get api values from keys.ini. File must be in main program directory"""
         char_number = 12
         parser = configparser.ConfigParser()
         parser.read('../keys.ini')
+        if corp:
+            api_type = 'api_corp'
+        else:
+            api_type = 'api_char'
         for i in range(char_number):
-            name = parser.get('api', 'char{}_name'.format(i))
-            self.keys[name] = {}
-            KeyID = parser.get('api', 'char{}_KeyID'.format(i))
-            vCode = parser.get('api', 'char{}_vCode'.format(i))
-            self.keys[name][KeyID] = KeyID
-            self.keys[name][vCode] = KeyID
+            try:
+                name = parser.get(api_type, 'char{}_name'.format(i+1))
+                characterID = parser.get(api_type, 'char{}_characterID'.format(i+1))
+                KeyID = parser.get(api_type, 'char{}_KeyID'.format(i+1))
+                vCode = parser.get(api_type, 'char{}_vCode'.format(i+1))
+
+                if corp:
+                    self.corp_api[name] = {}
+                    self.corp_api[name]['KeyID'] = KeyID
+                    self.corp_api[name]['vCode'] = vCode
+                    self.corp_api[name]['characterID'] = characterID
+                else:
+                    self.char_api[name] = {}
+                    self.char_api[name]['KeyID'] = KeyID
+                    self.char_api[name]['vCode'] = vCode
+                    self.char_api[name]['characterID'] = characterID
+            except configparser.NoOptionError:
+                pass
 
     def iterate_keys(self):
         """ iterate between keys to use"""
@@ -372,13 +392,14 @@ class API(object):
     def update_AccountBalance(self):
         self.AccountBalance = self.fetch_eveapi_data('AccountBalance')
 
-    def update_Skills(self):  # todo: add characterID to keys.ini and to url in order to work!
+    def update_Skills(self):  # todo: get character api from pedro
         """ get all api keys, and get each char's skill list into a dict"""
-        parser = configparser.ConfigParser()
-        parser.read('../keys.ini')
-        for num in range(self.number_of_characters):
-            character = parser.get('api', 'char{}_name'.format(num+1))
-            self.skills[character] = self.fetch_eveapi_data('Skills', character=character)
+        for character in self.char_api:
+            url = str(self.api_URLs['Skills'] +
+                      'characterID=' + str(self.char_api[character]['characterID']) +
+                      '&keyID=' + str(self.char_api[character]['KeyID']) +
+                      '&vCode=' + str(self.char_api[character]['vCode']))
+            self.skills[character] = self.fetch_eveapi_data('Skills', url=url)
 
 
 
@@ -390,35 +411,31 @@ class API(object):
         self.update_MarketOrders()
         self.iterate_keys()
 
-    def get_api_url(self, api_type, character=None):
+    def get_api_url(self, api_type):  # todo: change api choice to api_corp / api_char dictionaries
         """ """
-        if character is None:
-            url = str(self.api_URLs[api_type] +
-                      'keyID=' + str(self.apikey[0]) +
-                      '&vCode=' + str(self.apikey[1]))
-        else:
-            self.get_key_by_character_name(character)
-            url = str(self.api_URLs[api_type] +
-                      'keyID=' + str(self.apikey[0]) +
-                      '&vCode=' + str(self.apikey[1]))
-
+        url = str(self.api_URLs[api_type] +
+                  'keyID=' + str(self.apikey[0]) +
+                  '&vCode=' + str(self.apikey[1]))
         return url
 
-    def fetch_eveapi_data(self, api_type, character=None):  # todo: check structure
+    def fetch_eveapi_data(self, api_type, url=None, dict_key=None):  # todo: check structure
 
         """ get data from api.
         structure: {dict_key = {dict_data:val,dict_data,val}}"""
-        url = self.get_api_url(api_type, character)
+        if url is None:
+            url = self.get_api_url(api_type)
 
         print('Requesting {} data from API system'.format(api_type))
         print(url)
         xmldoc = minidom.parse(request.urlopen(url))  # parse the url, fetch data from xml into xmldoc
+        try:
+            currentTime = xmldoc.getElementsByTagName('currentTime')[0].firstChild.nodeValue
+            cachedUntil = xmldoc.getElementsByTagName('cachedUntil')[0].firstChild.nodeValue
 
-        currentTime = xmldoc.getElementsByTagName('currentTime')[0].firstChild.nodeValue
-        cachedUntil = xmldoc.getElementsByTagName('cachedUntil')[0].firstChild.nodeValue
-
-        data_dict = {'times': {'cachedUntil': cachedUntil,  # initialize output dictionary appending time medatada
-                               'currentTime': currentTime}}
+            data_dict = {'times': {'cachedUntil': cachedUntil,  # initialize output dictionary appending time medatada
+                                   'currentTime': currentTime}}
+        except:
+            pass
 
         header_line = xmldoc.getElementsByTagName('rowset')  # get xml table legend
         api_name = header_line[0].attributes['name'].value
