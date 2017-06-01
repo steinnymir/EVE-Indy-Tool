@@ -66,7 +66,7 @@ class SDE(object):
         self.DB_LOCATION_SECONDARY = parser.get('test', 'DB_LOCATION_SECONDARY', )
         self.DB_LOCATION_PICKLE = '../database/'
 
-        self.QUICK_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs')
+        #self.QUICK_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs')
         self.PRIMARY_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs', 'iconIDs')
         self.SECONDARY_IMPORT_LIST = (
             'invMarketGroups', 'invMetaGroups', 'invMetaTypes', 'invNames', 'invTypeMaterials', 'ramActivities',
@@ -75,29 +75,68 @@ class SDE(object):
 
         self.db_list = []
         # primary
-        self.typeIDs = None
-        self.blueprints = None
-        self.categoryIDs = None
-        self.groupIDs = None
-        self.iconIDs = None
-        # secondary
-        self.invMarketGroups = None
-        self.invMetaGroups = None
-        self.invMetaTypes = None
-        self.invNames = None
-        self.invTypeMaterials = None
-        self.ramActivities = None
-        self.ramAssemblyLineStations = None
-        self.ramAssemblyLineTypeDetailPerCategory = None
-        self.ramAssemblyLineTypeDetailPerGroup = None
-        self.ramAssemblyLineTypes = None
-        self.ramInstallationTypeContents = None
+        try:
+            self.typeIDs = self.import_pickle(typeIDs)
+        except:
+            self.typeIDs = None
+        try:
+            self.blueprints = self.import_pickle(blueprints)
+        except:
+            self.blueprints = None
+        try:
+            self.categoryIDs = self.import_pickle(categoryIDs)
+        except:
+            self.categoryIDs = None
 
         try:
-            self.load_all()
+            self.groupIDs = self.import_pickle(groupIDs)
         except:
+            self.groupIDs = None
+        try:
+            self.invMarketGroups = self.import_pickle(invMarketGroups)
+        except:
+            self.invMarketGroups = None
+        try:
+            self.invMetaGroups = self.import_pickle(invMetaGroups)
+        except:
+            self.invMetaGroups = None
+        try:
+            self.invMetaTypes = self.import_pickle(invMetaTypes)
+        except:
+            self.invMetaTypes = None
+        try:
+            self.invNames = self.import_pickle(invNames)
+        except:
+            self.invNames = None
+        try:
+            self.invTypeMaterials = self.invTypeMaterials(invTypeMaterials)
+        except:
+            self.invTypeMaterials = None
+        try:
+            self.ramActivities = self.import_pickle(ramActivities)
+        except:
+            self.ramActivities = None
+        try:
+            self.ramAssemblyLineStations = self.import_pickle(ramAssemblyLineStations)
+        except:
+            self.ramAssemblyLineStations = None
+        try:
+            self.ramAssemblyLineTypeDetailPerCategory = self.import_pickle(ramAssemblyLineTypeDetailPerCategory)
+        except:
+            self.ramAssemblyLineTypeDetailPerCategory = None
+        try:
+            self.ramAssemblyLineTypeDetailPerGroup = self.import_pickle(ramAssemblyLineTypeDetailPerGroup)
+        except:
+            self.ramAssemblyLineTypeDetailPerGroup = None
+        try:
+            self.ramAssemblyLineTypes = self.import_pickle(ramAssemblyLineTypes)
+        except:
+            self.ramAssemblyLineTypes = None
+        try:
+            self.ramInstallationTypeContents = self.import_pickle(ramInstallationTypeContents)
+        except:
+            self.ramInstallationTypeContents = None
             print('No database found, please be patient for the next 5 minutes...')
-            self.import_and_export()
 
     def import_and_export(self):
         """ Import all database data from yaml and dump to pickle
