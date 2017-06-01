@@ -23,8 +23,7 @@ def main():
     """ this refreshes import of data from yaml sde to pickle format"""
     timer = gfs.Timer()
     timer.tic()
-    # # sde = SDE()
-    # EveData = EveData()
+    sde = SDE()
 
     # print('\nimporting all data:\n')
     # sde.import_all_yaml()
@@ -76,65 +75,65 @@ class SDE(object):
         self.db_list = []
         # primary
         try:
-            self.typeIDs = self.import_pickle('typeIDs')
+            self.typeIDs = self.fetch_data_from_pickle('typeIDs')
         except:
             self.typeIDs = None
         try:
-            self.blueprints = self.import_pickle('blueprints')
+            self.blueprints = self.fetch_data_from_pickle('blueprints')
         except:
             self.blueprints = None
         try:
-            self.categoryIDs = self.import_pickle('categoryIDs')
+            self.categoryIDs = self.fetch_data_from_pickle('categoryIDs')
         except:
             self.categoryIDs = None
 
         try:
-            self.groupIDs = self.import_pickle('groupIDs')
+            self.groupIDs = self.fetch_data_from_pickle('groupIDs')
         except:
             self.groupIDs = None
         try:
-            self.invMarketGroups = self.import_pickle('invMarketGroups')
+            self.invMarketGroups = self.fetch_data_from_pickle('invMarketGroups')
         except:
             self.invMarketGroups = None
         try:
-            self.invMetaGroups = self.import_pickle('invMetaGroups'')
+            self.invMetaGroups = self.fetch_data_from_pickle('invMetaGroups')
         except:
             self.invMetaGroups = None
         try:
-            self.invMetaTypes = self.import_pickle('invMetaTypes')
+            self.invMetaTypes = self.fetch_data_from_pickle('invMetaTypes')
         except:
             self.invMetaTypes = None
         try:
-            self.invNames = self.import_pickle('invNames')
+            self.invNames = self.fetch_data_from_pickle('invNames')
         except:
             self.invNames = None
         try:
-            self.invTypeMaterials = self.invTypeMaterials('invTypeMaterials')
+            self.invTypeMaterials = self.fetch_data_from_pickle('invTypeMaterials')
         except:
             self.invTypeMaterials = None
         try:
-            self.ramActivities = self.import_pickle('ramActivities')
+            self.ramActivities = self.fetch_data_from_pickle('ramActivities')
         except:
             self.ramActivities = None
         try:
-            self.ramAssemblyLineStations = self.import_pickle('ramAssemblyLineStations')
+            self.ramAssemblyLineStations = self.fetch_data_from_pickle('ramAssemblyLineStations')
         except:
             self.ramAssemblyLineStations = None
         try:
-            self.ramAssemblyLineTypeDetailPerCategory = self.import_pickle('ramAssemblyLineTypeDetailPerCategory')
+            self.ramAssemblyLineTypeDetailPerCategory = self.fetch_data_from_pickle('ramAssemblyLineTypeDetailPerCategory')
         except:
             self.ramAssemblyLineTypeDetailPerCategory = None
         try:
-            self.ramAssemblyLineTypeDetailPerGroup = self.import_pickle('ramAssemblyLineTypeDetailPerGroup')
+            self.ramAssemblyLineTypeDetailPerGroup = self.fetch_data_from_pickle('ramAssemblyLineTypeDetailPerGroup')
         except:
             self.ramAssemblyLineTypeDetailPerGroup = None
         try:
-            self.ramAssemblyLineTypes = self.import_pickle('ramAssemblyLineTypes')
+            self.ramAssemblyLineTypes = self.fetch_data_from_pickle('ramAssemblyLineTypes')
         except:
             self.ramAssemblyLineTypes = None
 
         try:
-            self.ramInstallationTypeContents = self.import_pickle('ramInstallationTypeContents')
+            self.ramInstallationTypeContents = self.fetch_data_from_pickle('ramInstallationTypeContents')
         except:
             self.ramInstallationTypeContents = None
 
@@ -224,6 +223,22 @@ class SDE(object):
             print('Imported {0} in {1:.3f} ms'.format(dbName, dt))
         except FileNotFoundError:
             print('Error 404: file not found - ' + filePath)
+
+    def fetch_data_from_pickle(self, dbName):
+        """ imports data from pickle dumped file"""
+        filePath = self.DB_LOCATION_PICKLE + dbName + '.p'
+        timer = gfs.Timer()
+        timer.tic()
+        try:
+            print('Importing: ' + dbName)
+            with open(filePath, 'rb') as f:
+                data = pickle.load(f)
+            dt = timer.toc(out='return')
+            print('Imported {0} in {1:.3f} ms'.format(dbName, dt))
+            return data
+        except FileNotFoundError:
+            print('Error 404: file not found - ' + filePath)
+
 
     def get_data_yaml(self, dbFilepath):
         """ imports a YAML database to same name attribute"""

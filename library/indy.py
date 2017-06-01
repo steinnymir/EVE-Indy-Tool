@@ -19,13 +19,13 @@ def main():
     name = 'Standup L-Set Advanced Component Manufacturing Efficiency I'
 
     # ID = db.get_ID_from_name(name)
-    item = EVEItem(name)
+    item = Item(name)
     print(item.name)
     itemBPID = item.get_blueprintID()
     itemBP = Blueprint(itemBPID)
     print('\nMaterials List:\n')
     for name, quantity in itemBP.manufacturing_materials.items():
-        print('{0}  {1}'.format(EVEItem(name).name,quantity))
+        print('{0}  {1}'.format(Item(name).name, quantity))
     print()
     item.printName()
     print('parent bp: ' + str(itemBP.name))
@@ -123,7 +123,7 @@ class MassProduction(object):
                 pass
 
 
-class EVEItem(Indy):
+class Item(Indy):
     """ an object in new eden """
 
 
@@ -243,7 +243,7 @@ class EVEItem(Indy):
 
 
 
-class Blueprint(EVEItem):
+class Blueprint(Item):
     """ a blueprint class """
 
 
@@ -282,6 +282,7 @@ class Blueprint(EVEItem):
         self.research_time_time = None
         self.blueprintTypeID = None
         self.maxProductionLimit = None
+
 
         self.inventionBP = self.sde.get_parent_invention_blueprintID(self.itemID)
 
@@ -394,7 +395,23 @@ class Blueprint(EVEItem):
         """ prints the shopping list!"""
         print('\nMaterials List:\n')
         for name, quantity in self.manufacturing_materials.items():
-            print('{0}  {1}'.format(EVEItem(name).name, quantity))
+            print('{0}  {1}'.format(Item(name).name, quantity))
+
+
+class BPO(Blueprint):
+    """ a real blueprint, with ME,TE runs etc..."""
+    def __init__(self):
+        """ initialize its properties"""
+        self.material_efficiency = None
+        self.time_efficiency = None
+        self.owned_quantity = None
+
+class BPC(BPO):
+    """ a real bpc"""
+    def __init__(self):
+        """ define the bpc properties"""
+        self.runs = None
+
 
 if __name__ == '__main__':
     main()
