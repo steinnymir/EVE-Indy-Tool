@@ -47,7 +47,7 @@ class Indy(object):
         """ nothing to initialize"""
 
     def refresh_database(self):
-        self.sde.load_all()
+        self.sde.reload_all()
         self.api.update_All()
         self.market.update_marketData()
 

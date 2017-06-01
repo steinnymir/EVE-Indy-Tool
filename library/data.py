@@ -36,7 +36,7 @@ def main():
     # sde2 = SDE()
     # print('\nLoading Pickles\n')
     #
-    # sde2.load_all()
+    # sde2.reload_all()
     # print('\nloading complete\n')
     # timer.toc()
     api = API()
@@ -76,67 +76,67 @@ class SDE(object):
         self.db_list = []
         # primary
         try:
-            self.typeIDs = self.import_pickle(typeIDs)
+            self.typeIDs = self.import_pickle('typeIDs')
         except:
             self.typeIDs = None
         try:
-            self.blueprints = self.import_pickle(blueprints)
+            self.blueprints = self.import_pickle('blueprints')
         except:
             self.blueprints = None
         try:
-            self.categoryIDs = self.import_pickle(categoryIDs)
+            self.categoryIDs = self.import_pickle('categoryIDs')
         except:
             self.categoryIDs = None
 
         try:
-            self.groupIDs = self.import_pickle(groupIDs)
+            self.groupIDs = self.import_pickle('groupIDs')
         except:
             self.groupIDs = None
         try:
-            self.invMarketGroups = self.import_pickle(invMarketGroups)
+            self.invMarketGroups = self.import_pickle('invMarketGroups')
         except:
             self.invMarketGroups = None
         try:
-            self.invMetaGroups = self.import_pickle(invMetaGroups)
+            self.invMetaGroups = self.import_pickle('invMetaGroups'')
         except:
             self.invMetaGroups = None
         try:
-            self.invMetaTypes = self.import_pickle(invMetaTypes)
+            self.invMetaTypes = self.import_pickle('invMetaTypes')
         except:
             self.invMetaTypes = None
         try:
-            self.invNames = self.import_pickle(invNames)
+            self.invNames = self.import_pickle('invNames')
         except:
             self.invNames = None
         try:
-            self.invTypeMaterials = self.invTypeMaterials(invTypeMaterials)
+            self.invTypeMaterials = self.invTypeMaterials('invTypeMaterials')
         except:
             self.invTypeMaterials = None
         try:
-            self.ramActivities = self.import_pickle(ramActivities)
+            self.ramActivities = self.import_pickle('ramActivities')
         except:
             self.ramActivities = None
         try:
-            self.ramAssemblyLineStations = self.import_pickle(ramAssemblyLineStations)
+            self.ramAssemblyLineStations = self.import_pickle('ramAssemblyLineStations')
         except:
             self.ramAssemblyLineStations = None
         try:
-            self.ramAssemblyLineTypeDetailPerCategory = self.import_pickle(ramAssemblyLineTypeDetailPerCategory)
+            self.ramAssemblyLineTypeDetailPerCategory = self.import_pickle('ramAssemblyLineTypeDetailPerCategory')
         except:
             self.ramAssemblyLineTypeDetailPerCategory = None
         try:
-            self.ramAssemblyLineTypeDetailPerGroup = self.import_pickle(ramAssemblyLineTypeDetailPerGroup)
+            self.ramAssemblyLineTypeDetailPerGroup = self.import_pickle('ramAssemblyLineTypeDetailPerGroup')
         except:
             self.ramAssemblyLineTypeDetailPerGroup = None
         try:
-            self.ramAssemblyLineTypes = self.import_pickle(ramAssemblyLineTypes)
+            self.ramAssemblyLineTypes = self.import_pickle('ramAssemblyLineTypes')
         except:
             self.ramAssemblyLineTypes = None
         try:
-            self.ramInstallationTypeContents = self.import_pickle(ramInstallationTypeContents)
+            self.ramInstallationTypeContents = self.import_pickle('ramInstallationTypeContents')
         except:
             self.ramInstallationTypeContents = None
-            print('No database found, please be patient for the next 5 minutes...')
+
 
     def import_and_export(self):
         """ Import all database data from yaml and dump to pickle
@@ -168,11 +168,11 @@ class SDE(object):
             if dbName is not None:
                 self.export_pickle(dbName)
 
-    def load_all(self):
+    def reload_all(self):
         """ loads all available pickle format databases"""
         dbList = self.PRIMARY_IMPORT_LIST + self.SECONDARY_IMPORT_LIST
         for dbName in dbList:
-            self.import_pickle(dbName)  # todo: initialize directly in __init__
+            self.import_pickle(dbName)
 
     def import_data(self, dbFilepath):
         """ imports data from a database file (csv or yaml)"""
