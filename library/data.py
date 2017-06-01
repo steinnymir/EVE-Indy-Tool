@@ -92,7 +92,7 @@ class SDE(object):
         self.ramAssemblyLineTypeDetailPerGroup = None
         self.ramAssemblyLineTypes = None
         self.ramInstallationTypeContents = None
-
+    #
         try:
             self.load_all()
         except:
