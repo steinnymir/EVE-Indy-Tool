@@ -389,7 +389,7 @@ class Blueprint(Item):
             return requirement_dict
 
     def get_invention_parent_bp(self): # todo: make this function
-
+        pass
 
     def print_manufacturing_materials(self):
         """ prints the shopping list!"""
@@ -400,15 +400,33 @@ class Blueprint(Item):
 
 class BPO(Blueprint):
     """ a real blueprint, with ME,TE runs etc..."""
-    def __init__(self):
+    def __init__(self, blueprintID):
+        super(Blueprint, self).__init__(blueprintID)
         """ initialize its properties"""
+        #self.itemID = itemID
         self.material_efficiency = None
         self.time_efficiency = None
         self.owned_quantity = None
 
+    def manufacture(self):
+        ME = 20
+        TE = 10
+        runs = 1
+
+
+        pass
+    def copy(self):
+        pass
+    def invent(self):
+        pass
+    def research_time(self):
+        pass
+    def research_material(self):
+        pass
+
 class BPC(BPO):
     """ a real bpc"""
-    def __init__(self):
+    def __init__(self, itemID, blueprintID):
         """ define the bpc properties"""
         self.runs = None
 

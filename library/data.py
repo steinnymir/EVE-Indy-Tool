@@ -59,11 +59,11 @@ class SDE(object):
     def __init__(self):
         """ initialize attributes where to store all sde data"""
         parser = configparser.ConfigParser()
-        parser.read('../settings.ini')
+        parser.read('settings.ini')
         self.DB_LOCATION_CSV = parser.get('test', 'DB_LOCATION_CSV')
         self.DB_LOCATION_PRIMARY = parser.get('test', 'DB_LOCATION_PRIMARY')
         self.DB_LOCATION_SECONDARY = parser.get('test', 'DB_LOCATION_SECONDARY', )
-        self.DB_LOCATION_PICKLE = '../database/'
+        self.DB_LOCATION_PICKLE = 'database/'
 
         #self.QUICK_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs')
         self.PRIMARY_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs', 'iconIDs')
@@ -381,7 +381,7 @@ class API(object):
         """ get api values from keys.ini. File must be in main program directory"""
         char_number = 12
         parser = configparser.ConfigParser()
-        parser.read('../keys.ini')
+        parser.read('keys.ini')
         if corp:
             api_type = 'api_corp'
         else:
