@@ -96,38 +96,13 @@ class AssemblyLine(Indy):
         self.blueprints[bpID] = { 'obj':Blueprint(bpID), 'quantity':number}
 
 
-class MassProduction(object):
-    """ class for managing multiple items, in production, invention or whatever """
-
-    def __init__(self):
-        """ init attributes"""
-        self.materials_list = {}
-
-    def get_manufacturing_materials_list(self, itemList):  # todo: make me
-        """ calculate list of required materials from a list of bpIDs.
-        :type itemList: list of itemIDs of blueprints.
-        :return materials_dict:
-        """
-
-        for item in itemList:
-            bp = Blueprint(item, db)
-            bp.printName()
-            try:  # check whether itemID is a blueprint with material requirement for manufacturing
-                for key in bp.manufacturing_materials:
-                    quantity = bp.manufacturing_materials[key]
-                    try:
-                        self.materials_list[key] += quantity
-                    except KeyError:  # if key (material) not present yet, create it
-                        self.materials_list[key] = quantity
-            except TypeError:
-                pass
-
 
 class Item(Indy):
     """ an object in new eden """
 
 
     def __init__(self, item):
+        super(Item, self).__init__()
         """ initialzie"""
         if type(item) is str:  # allows for initialization with name or ID (str) or ID (int)
             try:  # try ID int
@@ -138,7 +113,6 @@ class Item(Indy):
             self.itemID = item
         else:
             print('Invalid item name or ID')
-
         self.attr_list = []
         self.typeIDs_attr_list = ['basePrice', 'marketGroupID', 'capacity', 'description',
                                   'factionID', 'graphicID', 'groupID', 'mass', 'masteries', 'name', 'portionSize',
@@ -178,7 +152,7 @@ class Item(Indy):
         self.categoriIconID = None
         self.price = self.market.get_min_sellprice(self.itemID)
 
-        self.blueprintID = self.sde.get_parent_blueprintID(self.itemID)
+        self.parent_blueprintID = self.sde.get_parent_blueprintID(self.itemID)
 
 
         self.initialize_typeIDs()
@@ -245,8 +219,6 @@ class Item(Indy):
 
 class Blueprint(Item):
     """ a blueprint class """
-
-
 
     def __init__(self, blueprintID):
         """ """

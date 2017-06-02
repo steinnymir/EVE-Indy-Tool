@@ -6,7 +6,7 @@ Created on Sat May 20 17:10:26 2017
 """
 from library import gfs, gui, data
 from library.indy import Item, Blueprint, BPO
-from library.gfs import roundup
+from library.gfs import roundup, Timer
 from PyQt5 import QtGui as qg
 from PyQt5 import QtWidgets as qw
 from PyQt5 import QtCore as qc
@@ -15,26 +15,101 @@ import os
 
 
 def main():
-    manufacture('condor')
+    timer = Timer()
+    timer.tic()
+
+    item = 'enyo'
+
+    base_materials, production_list = manufacture(item)
+    totprice=0
+    market_value = Item(item).price
+    print('Shopping List:')
+    for material, quantity in base_materials.items():
+        mat = Item(material)
+        print(str(mat.name).rjust(23), str(quantity).rjust(7), str(round(mat.price*quantity)).rjust(20))
+        totprice += mat.price*quantity
+
+    print('Production List:')
+    for material, quantity in production_list.items():
+        mat = Item(material)
+        print(str(mat.name).rjust(20), str(quantity).rjust(5))
+
+    print('Market Value: {0} Production cost: {1}'.format(market_value,totprice))
+    print('gain: '+ str(market_value-totprice))
+
+    timer.toc()
+
 
 def manufacture(product_IDorname):
 
 
     product = Item(product_IDorname)
-    product_blueprintID = product.blueprintID
-    product_bp = Blueprint(product_blueprintID)
 
-    ME = 9
-    stationBonus = 1
-    rigBonus = 2 * 0
-    effectiveME = (100-ME-stationBonus - rigBonus)/100
-    print(1-effectiveME)
-    raw_materials = product_bp.manufacturing_materials
-    product_bp.print_manufacturing_materials()
-    materials = raw_materials
-    for item, quantity in materials.items():
-        materials[item] = roundup(materials[item] * effectiveME)
-        print(materials[item])
+    if product.parent_blueprintID is None:
+        # print(product.name,' has no bp')
+        return None
+    else:
+        product_blueprintID = product.parent_blueprintID
+        product_bp = Blueprint(product_blueprintID)
+
+        ME = 9
+        stationBonus = 1
+        rigBonus = 2 * 0
+        effectiveME = (100-ME-stationBonus - rigBonus)/100
+        raw_materials = product_bp.manufacturing_materials
+        # product_bp.print_manufacturing_materials()
+        base_materials = {}
+        materials = {}
+        for item in raw_materials:
+                if Item(item).parent_blueprintID is None:
+                    base_materials[item] = roundup(raw_materials[item] * effectiveME)
+                else:
+                    materials[item] = roundup(raw_materials[item] * effectiveME)
+
+        for item in materials:
+            base2, mat2 = manufacture(item)
+            for item,quantity in base2.items():
+                try:
+                    base_materials[item] += quantity
+                except KeyError:
+                    base_materials[item] = quantity
+            for item,quantity in mat2.items():
+                try:
+                    materials[item] += quantity
+                except KeyError:
+                    materials[item] = quantity
+        return base_materials, materials
+
+
+
+
+        #
+        # pop_list = []
+        # children_materials = {}
+        # for item in materials:
+        #     matlist = manufacture(item)
+        #     if type(matlist) == dict:
+        #         for key in matlist:
+        #             try:
+        #                 children_materials[key] += matlist[key]
+        #             except KeyError:
+        #                 children_materials[key] = matlist[key]
+        #         pop_list.append(item)
+        #     else:
+        #         pass
+        # for item in children_materials:
+        #     try:
+        #         materials[item] += children_materials[item]
+        #     except KeyError:
+        #         materials[item] = children_materials[item]
+        #
+        # # for item in materials:
+        # #     if item in pop_list:
+        # #         pass
+        # #     else:
+        # #         final_materials[item] = materials[item]
+        # return materials, pop_list
+
 
 
 
@@ -51,6 +126,7 @@ def basic_manufacturing():
     print('\n\n\n')
 
     name = 'Standup L-Set Advanced Component Manufacturing Efficiency I'
+    name = 'widow'
 
     ID = db.get_ID_from_name(name)
 

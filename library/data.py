@@ -21,37 +21,10 @@ from library import gfs
 
 def main():
     """ this refreshes import of data from yaml sde to pickle format"""
-    timer = gfs.Timer()
-    timer.tic()
-    sde = SDE()
-
-    print('\nimporting all data:\n')
-    sde.import_all_yaml()
-    timer.toc()
-    print('\ndumping all data:\n')
-    sde.dump_all_as_pickle()
-    timer.toc()
-    # print('\ndump successful\n')
-    # sde2 = SDE()
-    # print('\nLoading Pickles\n')
-    #
-    # sde2.reload_all()
-    # print('\nloading complete\n')
-    # timer.toc()
-    api = API()
-    api.update_Skills()
-    for key in api.skills:
-        print(api.skills[key])
-    # print(api.apikey)
-    # api.iterate_keys()
-    # print(api.apikey)
-    # api.update_All()
-
-    # market = Market()
-    # market.update_marketData()
-
-    timer.toc()
-
+    # sde = SDE()
+    # sde.import_and_export()
+    market = Market()
+    market.update_marketData()
 
 class SDE(object):
     """ Contains a series of dictionaries containing necessary sde data"""
@@ -59,10 +32,11 @@ class SDE(object):
     def __init__(self):
         """ initialize attributes where to store all sde data"""
         parser = configparser.ConfigParser()
+
         parser.read('settings.ini')
-        self.DB_LOCATION_CSV = parser.get('test', 'DB_LOCATION_CSV')
-        self.DB_LOCATION_PRIMARY = parser.get('test', 'DB_LOCATION_PRIMARY')
-        self.DB_LOCATION_SECONDARY = parser.get('test', 'DB_LOCATION_SECONDARY', )
+        self.DB_LOCATION_CSV = parser.get('locations', 'DB_LOCATION_CSV')
+        self.DB_LOCATION_PRIMARY = parser.get('locations', 'DB_LOCATION_PRIMARY')
+        self.DB_LOCATION_SECONDARY = parser.get('locations', 'DB_LOCATION_SECONDARY', )
         self.DB_LOCATION_PICKLE = 'database/'
 
         #self.QUICK_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs')
@@ -141,11 +115,13 @@ class SDE(object):
     def import_and_export(self):
         """ Import all database data from yaml and dump to pickle
         """
+        timer = gfs.Timer()
+        timer.tic()
         print('\nimporting all data:\n')
-        sde.import_all_yaml()
+        self.import_all_yaml()
         timer.toc()
         print('\ndumping all data:\n')
-        sde.dump_all_as_pickle()
+        self.dump_all_as_pickle()
         timer.toc()
         print('\ndump successful\n')
 
@@ -286,6 +262,7 @@ class SDE(object):
         return data
 
     # ++++++++ Functionalities +++++++++++
+
     def get_ID_from_name(self, name):
         """ returns the itemID from a given name
         :return: int
@@ -302,15 +279,17 @@ class SDE(object):
     def get_parent_blueprintID(self, itemID):  # todo: Fix me
         """ returns the blueprintID that produces the item with given itemID, if none, return None
         """
+        item_ID = int(itemID)
         for key in self.blueprints:
             try:
                 product_list = self.blueprints[key]['activities']['manufacturing']['products']
                 for item in product_list:  # products is a list. so we need to break the dict style and add list parser
-                    parent_typeID = item['typeID']
-                    if parent_typeID == itemID:
+                    parent_typeID = int(item['typeID'])
+                    if parent_typeID == item_ID:
                         return key
             except KeyError:
-                return None
+                pass
+        return None
 
     def get_parent_invention_blueprintID(self, blueprintID):
         """ return the blueprint which invented gives the input blueprintID, if none, return None"""
@@ -515,7 +494,7 @@ class ESI(object):  # todo: find out how to make authorized requests
     def __init__(self):
         """ """
         self.url_serverStatus = 'https://esi.tech.ccp.is/latest/status/?datasource=tranquility&user_agent=eveindytool'
-        self.DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'
+        self.DB_LOCATION = 'database/'
         self.root = 'https://esi.tech.ccp.is/latest/'
         self.user_agent = 'eveindytool_Pax_Correl'
         DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # comment when at home
@@ -639,4 +618,5 @@ class Market(ESI):
 
 
 if __name__ == '__main__':
+    os.chdir('../')
     main()
