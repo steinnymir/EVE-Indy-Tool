@@ -68,3 +68,11 @@ def roundup(number):
     else:
         out = round(number) + 1
     return out
+
+
+def isk(num, suffix=' ISK'):
+    for unit in ['','K','M','G','T','P','E','Z']:
+        if abs(num) < 1000.0:
+            return "%3.2f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Y', suffix)

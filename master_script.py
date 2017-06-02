@@ -6,7 +6,7 @@ Created on Sat May 20 17:10:26 2017
 """
 from library import gfs, gui, data
 from library.indy import Item, Blueprint, BPO
-from library.gfs import roundup, Timer
+from library.gfs import roundup, Timer, isk
 from PyQt5 import QtGui as qg
 from PyQt5 import QtWidgets as qw
 from PyQt5 import QtCore as qc
@@ -18,106 +18,101 @@ def main():
     timer = Timer()
     timer.tic()
 
-    item = 'enyo'
+    item = 'capital construction parts'
 
     base_materials, production_list = manufacture(item)
-    totprice=0
+    totprice = 0
     market_value = Item(item).price
     print('Shopping List:')
     for material, quantity in base_materials.items():
         mat = Item(material)
-        print(str(mat.name).rjust(23), str(quantity).rjust(7), str(round(mat.price*quantity)).rjust(20))
-        totprice += mat.price*quantity
+        price = mat.price * quantity
+        print(str(mat.name).rjust(23), str(quantity).rjust(7), isk(mat.price), isk(price))
+        totprice += price
 
     print('Production List:')
     for material, quantity in production_list.items():
         mat = Item(material)
-        print(str(mat.name).rjust(20), str(quantity).rjust(5))
+        print(str(mat.name).rjust(20), isk(quantity))
 
-    print('Market Value: {0} Production cost: {1}'.format(market_value,totprice))
-    print('gain: '+ str(market_value-totprice))
+    print('Market Value: ' + isk(market_value) + '  Production cost: ' + isk(totprice))
+    print('gain: ' + isk(market_value - totprice))
+    print('gain %: ' + str(round(((market_value - totprice)/market_value)*100,2)))
 
+    print
     timer.toc()
 
 
 def manufacture(product_IDorname):
-
-
     product = Item(product_IDorname)
 
-    if product.parent_blueprintID is None:
-        # print(product.name,' has no bp')
-        return None
-    else:
-        product_blueprintID = product.parent_blueprintID
-        product_bp = Blueprint(product_blueprintID)
+    # if product.parent_blueprintID is None:
+    #     # print(product.name,' has no bp')
+    #     return None
+    # else:
+    product_blueprintID = product.parent_blueprintID
+    product_bp = Blueprint(product_blueprintID)
 
-        ME = 9
-        stationBonus = 1
-        rigBonus = 2 * 0
-        effectiveME = (100-ME-stationBonus - rigBonus)/100
-        raw_materials = product_bp.manufacturing_materials
-        # product_bp.print_manufacturing_materials()
-        base_materials = {}
-        materials = {}
-        for item in raw_materials:
-                if Item(item).parent_blueprintID is None:
-                    base_materials[item] = roundup(raw_materials[item] * effectiveME)
-                else:
-                    materials[item] = roundup(raw_materials[item] * effectiveME)
+    ME = 10
+    stationBonus = 1
+    rigBonus = 2 * 0
+    effectiveME = (100 - ME - stationBonus - rigBonus) / 100
+    raw_materials = product_bp.manufacturing_materials
+    # product_bp.print_manufacturing_materials()
+    base_materials = {}
+    materials = {}
+    for item in raw_materials:
+        if Item(item).parent_blueprintID is None:
+            base_materials[item] = roundup(raw_materials[item] * effectiveME)
+        else:
+            materials[item] = roundup(raw_materials[item] * effectiveME)
 
-        for item in materials:
-            base2, mat2 = manufacture(item)
-            for item,quantity in base2.items():
-                try:
-                    base_materials[item] += quantity
-                except KeyError:
-                    base_materials[item] = quantity
-            for item,quantity in mat2.items():
-                try:
-                    materials[item] += quantity
-                except KeyError:
-                    materials[item] = quantity
-        return base_materials, materials
-
-
-
-
-        #
-        # pop_list = []
-        # children_materials = {}
-        # for item in materials:
-        #     matlist = manufacture(item)
-        #     if type(matlist) == dict:
-        #         for key in matlist:
-        #             try:
-        #                 children_materials[key] += matlist[key]
-        #             except KeyError:
-        #                 children_materials[key] = matlist[key]
-        #         pop_list.append(item)
-        #     else:
-        #         pass
-        # for item in children_materials:
-        #     try:
-        #         materials[item] += children_materials[item]
-        #     except KeyError:
-        #         materials[item] = children_materials[item]
-        #
-        # # for item in materials:
-        # #     if item in pop_list:
-        # #         pass
-        # #     else:
-        # #         final_materials[item] = materials[item]
-        # return materials, pop_list
+    for item, quantity in materials.items():
+        base2, mat2 = manufacture(item)
+        for baseitem, basequantity in base2.items():
+            try:
+                base_materials[baseitem] += basequantity*quantity
+            except KeyError:
+                base_materials[baseitem] = basequantity*quantity
+        for matitem, matquantity in mat2.items():
+            try:
+                materials[matitem] += matquantity*quantity
+            except KeyError:
+                materials[matitem] = matquantity*quantity
+    return base_materials, materials
 
 
 
 
-
+    #
+    # pop_list = []
+    # children_materials = {}
+    # for item in materials:
+    #     matlist = manufacture(item)
+    #     if type(matlist) == dict:
+    #         for key in matlist:
+    #             try:
+    #                 children_materials[key] += matlist[key]
+    #             except KeyError:
+    #                 children_materials[key] = matlist[key]
+    #         pop_list.append(item)
+    #     else:
+    #         pass
+    # for item in children_materials:
+    #     try:
+    #         materials[item] += children_materials[item]
+    #     except KeyError:
+    #         materials[item] = children_materials[item]
+    #
+    # # for item in materials:
+    # #     if item in pop_list:
+    # #         pass
+    # #     else:
+    # #         final_materials[item] = materials[item]
+    # return materials, pop_list
 
 
 def basic_manufacturing():
-
     timer = gfs.Timer()
     timer.tic()
 
@@ -150,10 +145,9 @@ def basic_manufacturing():
     print('parent bp: ' + str(itemBP.name))
     print(item.basePrice)
     market = data.Market()
-    #market.update_marketData()
+    # market.update_marketData()
     cost = market.get_min_sellprice(item.itemID)
-    print('{0} minimum cost is {1} ISK'.format(item.name,cost))
-
+    print('{0} minimum cost is {1} ISK'.format(item.name, cost))
 
     timer.toc()
     #
@@ -175,6 +169,5 @@ def launchGUI():
 
 
 if __name__ == '__main__':
-
     main()
-    #launchGUI()
+    # launchGUI()
