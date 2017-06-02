@@ -5,7 +5,8 @@ Created on Sat May 20 17:10:26 2017
 @author: Steinn Ymir
 """
 from library import gfs, gui, data
-from library.indy import EVEItem, Blueprint
+from library.indy import Item, Blueprint, BPO
+from library.gfs import roundup
 from PyQt5 import QtGui as qg
 from PyQt5 import QtWidgets as qw
 from PyQt5 import QtCore as qc
@@ -14,6 +15,33 @@ import os
 
 
 def main():
+    manufacture('condor')
+
+def manufacture(product_IDorname):
+
+
+    product = Item(product_IDorname)
+    product_blueprintID = product.blueprintID
+    product_bp = Blueprint(product_blueprintID)
+
+    ME = 9
+    stationBonus = 1
+    rigBonus = 2 * 0
+    effectiveME = (100-ME-stationBonus - rigBonus)/100
+    print(1-effectiveME)
+    raw_materials = product_bp.manufacturing_materials
+    product_bp.print_manufacturing_materials()
+    materials = raw_materials
+    for item, quantity in materials.items():
+        materials[item] = roundup(materials[item] * effectiveME)
+        print(materials[item])
+
+
+
+
+
+
+def basic_manufacturing():
 
     timer = gfs.Timer()
     timer.tic()
@@ -26,7 +54,7 @@ def main():
 
     ID = db.get_ID_from_name(name)
 
-    item = EVEItem(ID, db)
+    item = Item(ID, db)
 
     itemBPID = item.get_blueprintID()
     itemBP = Blueprint(itemBPID, db)
@@ -36,7 +64,7 @@ def main():
     market = data.Market()
     totalcost = 0
     for ID in material_list:  # todo: implement as function, add category separation
-        mat = EVEItem(int(ID))
+        mat = Item(int(ID))
         quantity = material_list[ID]
         cost = market.get_min_sellprice(mat.itemID) * quantity
         print('- {0} \t {1} \t {2}'.format(mat.name, quantity, cost))
@@ -73,4 +101,4 @@ def launchGUI():
 if __name__ == '__main__':
 
     main()
-    launchGUI()
+    #launchGUI()

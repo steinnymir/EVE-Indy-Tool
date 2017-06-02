@@ -59,3 +59,12 @@ def getNum_or_Str(string):
             out = string
     finally:
         return(out)
+
+def roundup(number):
+    if (number % 1)*10 >= 5:
+        out = round(number)
+    elif (number % 1)*10 == 0:
+        out = round(number)
+    else:
+        out = round(number) + 1
+    return out
