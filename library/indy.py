@@ -361,7 +361,8 @@ class Blueprint(Item):
             return requirement_dict
 
     def get_invention_parent_bp(self): # todo: make this function
-        pass
+        self.inventionBP = self.sde.get_parent_invention_blueprintID(self.itemID)
+        return self.inventionBP
 
     def print_manufacturing_materials(self):
         """ prints the shopping list!"""

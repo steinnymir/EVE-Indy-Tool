@@ -301,7 +301,8 @@ class SDE(object):
                     if parent_typeID == blueprintID:
                         return key
             except KeyError:
-                return None
+                pass
+        return None
 
 
                 # --------------- Old and deprectated methods ------------------

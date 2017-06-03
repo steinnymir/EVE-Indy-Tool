@@ -18,8 +18,41 @@ def main():
     timer = Timer()
     timer.tic()
 
-    item = 'capital construction parts'
+    item = 'crow'
+    invent(item)
 
+
+    timer.toc()
+    timer.reset()
+def invent(product_IDorname):  # todo: implement item or bp recognition
+    product = Item(product_IDorname)
+    product_blueprintID = product.parent_blueprintID
+    product_bp = Blueprint(product_blueprintID)
+    parent_invention_bpID = product_bp.inventionBP
+
+    inventionBP = Blueprint(parent_invention_bpID)
+    inv_probability = inventionBP.invention_probability
+    inv_materials_raw = inventionBP.invention_materials
+    inv_materials = {}
+    tot_price = 0
+    for key,value in inv_materials_raw.items():
+        inv_materials[key] = value / inv_probability
+
+    for items, quantity in inv_materials.items():
+        item = Item(items)
+        price = item.price*quantity
+        print(item.name, quantity, isk(price))
+        tot_price += price
+        print(isk(tot_price))
+    return inv_materials, tot_price
+
+
+
+def TEMP_manufacture_item(item):
+    """ get an item name as string and print material and production requirements, prices and gains
+    :param item:
+    :return:
+    """
     base_materials, production_list = manufacture(item)
     totprice = 0
     market_value = Item(item).price
@@ -39,11 +72,7 @@ def main():
     print('gain: ' + isk(market_value - totprice))
     print('gain %: ' + str(round(((market_value - totprice)/market_value)*100,2)))
 
-    print
-    timer.toc()
-
-
-def manufacture(product_IDorname):
+def manufacture(product_IDorname):  # todo: implement item or bp recognition
     product = Item(product_IDorname)
 
     # if product.parent_blueprintID is None:
