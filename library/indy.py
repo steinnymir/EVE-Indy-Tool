@@ -5,6 +5,8 @@ Created on Sat May 20 17:02:12 2017
 @author: Stymir
 """
 from library import data, gfs
+import os
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -12,27 +14,15 @@ except ImportError:
 
 
 def main():
-
     timer = gfs.Timer()
     timer.tic()
 
-    name = 'Standup L-Set Advanced Component Manufacturing Efficiency I'
+    bpName = 'Enyo'
+    bp = Blueprint(Item('Enyo').parent_blueprintID)
 
-    # ID = db.get_ID_from_name(name)
-    item = Item(name)
-    print(item.name)
-    itemBPID = item.get_blueprintID()
-    itemBP = Blueprint(itemBPID)
-    print('\nMaterials List:\n')
-    for name, quantity in itemBP.manufacturing_materials.items():
-        print('{0}  {1}'.format(Item(name).name, quantity))
-    print()
-    item.printName()
-    print('parent bp: ' + str(itemBP.name))
-
-    print('{0} minimum cost is {1} ISK'.format(item.name,item.price))
-    print(item.categoryName)
-    print(item.groupName)
+    bpc = BPC(bp.blueprintID,runs=4,ME=10,TE=20)
+    station = Station(station_class='Azbel',system_class='HighSec')
+    print(station.get_material_efficiency(bpc))
 
 
     timer.toc()
@@ -43,6 +33,7 @@ class Indy(object):
     sde = data.SDE()
     market = data.Market()
     api = data.API()
+
     def __init__(self):
         """ nothing to initialize"""
 
@@ -51,8 +42,10 @@ class Indy(object):
         self.api.update_All()
         self.market.update_marketData()
 
+
 class Character(Indy):
     """ """
+
     def __init__(self):
         """ """
         self.name
@@ -61,45 +54,234 @@ class Character(Indy):
     def get_skills(self):
         """ """
 
+
+class Station(Indy):
+    """ """
+
+    def __init__(self, station_class, system_class='HighSec'):
+        super(Station, self).__init__()
+
+        self.station_typeID = None
+        self.station_class = station_class
+
+        if self.station_class == 'Azbel':
+            self.ME_bonus = 0.01
+            self.TE_bonus = 0.2
+            self.cost_bonus = 0.04
+        elif self.station_class == 'Raitaru':
+            self.ME_bonus = 0.01
+            self.TE_bonus = 0.15
+            self.cost_bonus = 0.03
+        elif self.station_class == 'Sotiyo':
+            self.ME_bonus = 0.01
+            self.TE_bonus = 0.3
+            self.cost_bonus = 0.05
+
+        if system_class == 'HighSec':
+            self.system_mod = 1
+        elif system_class == 'LowSec':
+            self.system_mod = 1.9
+        elif system_class == 'NullSec':
+            self.system_mod = 2.1
+
+        self.fuel_consumption_bonus = 0.25
+        # self.init_station_bonuses()
+
+        self.rigs_bonus = {
+            'Advanced Component': {'ME': False, 'TE': False},
+            'Advanced Large Ship': {'ME': False, 'TE': False},
+            'Advanced Medium Ship': {'ME': False, 'TE': False},
+            'Advanced Small Ship': {'ME': True, 'TE': False},
+            'Ammunition': {'ME': False, 'TE': False},
+            'Basic Capital Component': {'ME': False, 'TE': False},
+            'Basic Large Ship': {'ME': False, 'TE': False},
+            'Basic Medium Ship': {'ME': False, 'TE': False},
+            'Basic Small Ship': {'ME': False, 'TE': False},
+            'Blueprint Copy': {'ME': False, 'TE': False},
+            'Capital Ship': {'ME': False, 'TE': False},
+            'Drone and Fighter': {'ME': False, 'TE': False},
+            'Equipment': {'ME': False, 'TE': False},
+            'Invention': {'ME': False, 'TE': False},
+            'ME Research': {'ME': False, 'TE': False},
+            'Structure': {'ME': False, 'TE': False},
+            'TE research': {'ME': False, 'TE': False},
+        }
+
+        self.rigs_bonus_categories = {}
+        self.rigs_bonus_groups = {  # todo: correct this shit, add implementation for med and large ships
+            'Advanced Component': ('Construction Components', 'Tools'),
+            'Advanced Large Ship': ('Black Ops', 'Elite Battleship', 'Marauders' 'Jump Freighter'),
+            'Advanced Medium Ship': ('Strategic Cruiser',
+                                     'Attack Battlecruiser',
+                                     'Combat Battlecruiser',
+                                     'Combat Recon Ship',
+                                     'Force Recon Ship',
+                                     'Heavy Assault Ship',
+                                     'Heavy Interdictors',
+                                     'Logistics',
+                                     'Command Ship',
+                                     'Transport Ship',
+                                     'Blockade Runner'),
+            'Advanced Small Ship': ('Assault Ship',
+                                    'Covert Ops',
+                                    'Electronic Attack Ship',
+                                    'Interceptor',
+                                    'Stealth Bomber',
+                                    'Assault Frigate',
+                                    'Exhumer',
+                                    'Interdictor'
+                                    'Command Destroyer'),
+            'Ammunition': ('', ','''),
+            'Basic Capital Component': (),
+            'Basic Large Ship': ('Battleship'),
+            'Basic Medium Ship': ('Cruiser',
+                                  'Battlecruiser',
+                                  'Industrial'),
+            'Basic Small Ship': ('Frigate',
+                                 'Destroyer',
+                                 'Mining Barge'),
+            'Blueprint Copy': (),
+            'Capital Ship': (),
+            'Drone and Fighter': (),
+            'Equipment': (),
+            'Invention': (),
+            'ME Research': (),
+            'Structure': (),
+            'TE research': (),
+        }
+
+
+    def init_station_bonuses(self):
+        """ depending on station name, set the right bonuses"""
+        if self.station_class == 'Azbel':
+            self.ME_bonus = 0.01
+            self.TE_bonus = 0.2
+            self.cost_bonus = 0.04
+        elif self.station_class == 'Raitaru':
+            self.ME_bonus = 0.01
+            self.TE_bonus = 0.15
+            self.cost_bonus = 0.03
+        elif self.station_class == 'Sotiyo':
+            self.ME_bonus = 0.01
+            self.TE_bonus = 0.3
+            self.cost_bonus = 0.05
+        else:
+            raise TypeError('{} is not an Engineering Complex'.format(self.station_class))
+
+    def get_material_efficiency(self, blueprint):
+        """
+        get the material efficiency of the given blueprint in this station, with its assembly lines.
+        calculated as (1-base_ME) * (1-rig_ME_bonus) *(1 - station_ME_bonus) * (1 - skill_ME_bonus)
+        :blueprint: BPO or BPC
+            blueprint copy or original
+        :return: float
+            effective material efficiency: multiplier for materials.
+        """
+        if isinstance(blueprint, BPC):
+            base_ME = blueprint.ME
+            base_TE = blueprint.TE
+            # fetch name of first manufacturing product
+            prod_dict = blueprint.manufacturing_products
+            for key in prod_dict:
+                product = Item(key)
+            # product = Item(list(blueprint.manufacturing_products.keys())[0])
+
+            rig_ME_bonus = 0
+            rig_TE_bonus = 0
+            print(product.categoryName, product.groupName)
+
+            if product.categoryName == 'Charge':
+                if self.rigs_bonus['Ammunition']['ME']:
+                    rig_ME_bonus = 0.02
+                if self.rigs_bonus['Ammunition']['TE']:
+                    rig_TE_bonus = 0.2
+            elif product.categoryName == 'Drone':
+                if self.rigs_bonus['Drone and Fighter']['ME']:
+                    rig_ME_bonus = 0.02
+                if self.rigs_bonus['Drone and Fighter']['TE']:
+                    rig_TE_bonus = 0.2
+            elif product.categoryName == 'Ship':  # todo: make difference between small med and large ships
+                print('true')
+                if product.metaGroupID == 2:
+                    if self.rigs_bonus['Advanced Small Ship']['ME']:
+                        rig_ME_bonus = 0.02
+                    if self.rigs_bonus['Advanced Small Ship']['TE']:
+                        rig_TE_bonus = 0.2
+                else:
+                    if self.rigs_bonus['Basic Small Ship']['ME']:
+                        rig_ME_bonus = 0.02
+                    if self.rigs_bonus['Basic Small Ship']['TE']:
+                        rig_TE_bonus = 0.2
+            elif product.categoryName == 'Module':
+                if self.rigs_bonus['Equipment']['ME']:
+                    rig_ME_bonus = 0.02
+                if self.rigs_bonus['Equipment']['TE']:
+                    rig_TE_bonus = 0.2
+            elif product.categoryName == 'Commodity':
+                if blueprint.groupName == 'Capital Construction Part':
+                    if self.rigs_bonus['Basic Capital Component']['ME']:
+                        rig_ME_bonus = 0.02
+                    if self.rigs_bonus['Basic Capital Component']['TE']:
+                        rig_TE_bonus = 0.2
+                else:
+                    if self.rigs_bonus['Advanced Component']['ME']:
+                        rig_ME_bonus = 0.02
+                    if self.rigs_bonus['Advanced Component']['TE']:
+                        rig_TE_bonus = 0.2
+
+            skill_TE_bonus = 0.2
+            ME = (1 - base_ME/100) * (1 - rig_ME_bonus * self.system_mod) * (1 - self.ME_bonus)
+            TE = (1 - base_TE/100) * (1 - rig_TE_bonus * self.system_mod) * (1 - self.TE_bonus) * (1 - skill_TE_bonus)
+            print(base_ME,rig_ME_bonus,self.system_mod,self.ME_bonus)
+            return ME, TE
+        else:
+            raise TypeError('given blueprint is neither a BPO or a BPC')
+
+
+    def acivity_manufacture(self, blueprintID):
+        """ use an assembly line of the station to manufacture the given blueprint.
+        """
+        pass  # todo: get from masterscript
+
+    def acivity_invent(self, blueprintID):
+        """ use an assembly line of the station to invent the given blueprint.
+        """
+        pass  # todo: get from masterscript
+
+
 class AssemblyLine(Indy):
     """ the object which does all industry stuff: manufacture, invention etc"""
-    def __init__(self, assemblyLine):
-        super.__init__()
-        """ """
 
+    def __init__(self, assemblyLine):
+        super(self).__init__()
+        """ """
 
         self.assemblyLineTypeID = None
         self.assemblyLineTypeName = None
-        #from ramAssemblyLineTypes
+        # from ramAssemblyLineTypes
         self.activityID = None
         self.baseCostMultiplier = None
         self.baseMaterialMultiplier = None
         self.baseTimeMultiplier = None
         self.description = None
         self.volume = None
-        self.categoryIDmultipliers = None
-        self.groupIDmultipliers = None
+        self.categoryID_multipliers = None
+        self.groupID_multipliers = None
 
     def initialize_multipliers(self):
         """ init groupID and categoryID based multipliers"""
 
         for key in self.sde.ramAssemblyLineTypeDetailPerCategory:
-            if self.sde.ramAssemblyLineTypeDetailPerCategory[key][assemblyLineTypeID] == self.assemblyLineTypeID:
-                self.categoryIDmultipliers = self.sde.ramAssemblyLineTypeDetailPerCategory[key]
+            if self.sde.ramAssemblyLineTypeDetailPerCategory[key]['assemblyLineTypeID'] == self.assemblyLineTypeID:
+                self.categoryID_multipliers = self.sde.ramAssemblyLineTypeDetailPerCategory[key]
 
         for key in self.sde.ramAssemblyLineTypeDetailPerGroup:
-            if self.sde.ramAssemblyLineTypeDetailPerGroup[key][assemblyLineTypeID] == self.assemblyLineTypeID:
-                self.groupIDmultipliers = self.sde.ramAssemblyLineTypeDetailPerGroup[key]
-
-    def append_blueprint(self, bpID):
-
-        self.blueprints[bpID] = { 'obj':Blueprint(bpID), 'quantity':number}
-
+            if self.sde.ramAssemblyLineTypeDetailPerGroup[key]['assemblyLineTypeID'] == self.assemblyLineTypeID:
+                self.groupID_multipliers = self.sde.ramAssemblyLineTypeDetailPerGroup[key]
 
 
 class Item(Indy):
     """ an object in new eden """
-
 
     def __init__(self, item):
         super(Item, self).__init__()
@@ -107,7 +289,7 @@ class Item(Indy):
         if type(item) is str:  # allows for initialization with name or ID (str) or ID (int)
             try:  # try ID int
                 self.itemID = int(item)
-            except ValueError: #  if not a number: its a name!
+            except ValueError:  # if not a number: its a name!
                 self.itemID = self.sde.get_ID_from_name(item)
         elif type(item) is int:
             self.itemID = item
@@ -142,22 +324,28 @@ class Item(Indy):
         self.soundID = None
         self.traits = None
         self.volume = None
-        #from groupIDs
+        # from invMetaTypes and invMetaGroups
+        self.metaGroupID = None
+        self.metaGroupName = None
+        self.parentTypeID = None
+        # from groupIDs
         self.categoryID = None
         self.fittableNonSingleton = None
         self.iconID = None
         self.groupName = None
-        #from categoryIDs
+        # from categoryIDs
         self.categoryName = None
-        self.categoriIconID = None
-        self.price = self.market.get_min_sellprice(self.itemID)
-
+        self.categoryIconID = None
+        try:
+            self.price = self.market.get_min_sellprice(self.itemID)
+        except KeyError:
+            self.price = None
         self.parent_blueprintID = self.sde.get_parent_blueprintID(self.itemID)
-
 
         self.initialize_typeIDs()
         self.initialize_groupIDs()
         self.initialize_categoryIDs()
+        self.initialize_invMetaTypes()
 
     def refresh(self):
         """ re-initialize item"""
@@ -215,6 +403,10 @@ class Item(Indy):
         except KeyError:
             pass
 
+    def initialize_invMetaTypes(self):
+        self.metaGroupID = self.sde.invMetaTypes[self.itemID]['metaGroupID']
+        self.parentTypeID = self.sde.invMetaTypes[self.itemID]['parentTypeID']
+        self.metaGroupName = self.sde.invMetaGroups[self.itemID]['metaGroupName']
 
 
 class Blueprint(Item):
@@ -255,22 +447,22 @@ class Blueprint(Item):
         self.blueprintTypeID = None
         self.maxProductionLimit = None
 
-
         self.inventionBP = self.sde.get_parent_invention_blueprintID(self.itemID)
 
         self.initialize_BP()
+
 
     def initialize_BP(self):
         """ initializes all BP related attributes"""
 
         try:  # --------------  copying  --------------
             self.copying_materials = self.translate_to_dict(
-                requirement_list= self.sde.blueprints[self.itemID]['activities']['copying']['materials'],
+                requirement_list=self.sde.blueprints[self.itemID]['activities']['copying']['materials'],
                 key_label='typeID',
                 quantity_label='quantity')
 
             self.copying_skills = self.translate_to_dict(
-                requirement_list= self.sde.blueprints[self.itemID]['activities']['copying']['skills'],
+                requirement_list=self.sde.blueprints[self.itemID]['activities']['copying']['skills'],
                 key_label='typeID',
                 quantity_label='level')
 
@@ -360,7 +552,7 @@ class Blueprint(Item):
         else:
             return requirement_dict
 
-    def get_invention_parent_bp(self): # todo: make this function
+    def get_invention_parent_bp(self):  # todo: make this function
         self.inventionBP = self.sde.get_parent_invention_blueprintID(self.itemID)
         return self.inventionBP
 
@@ -371,38 +563,21 @@ class Blueprint(Item):
             print('{0}  {1}'.format(Item(name).name, quantity))
 
 
-class BPO(Blueprint):
-    """ a real blueprint, with ME,TE runs etc..."""
-    def __init__(self, blueprintID):
-        super(Blueprint, self).__init__(blueprintID)
-        """ initialize its properties"""
-        #self.itemID = itemID
-        self.material_efficiency = None
-        self.time_efficiency = None
-        self.owned_quantity = None
-
-    def manufacture(self):
-        ME = 20
-        TE = 10
-        runs = 1
-
-
-        pass
-    def copy(self):
-        pass
-    def invent(self):
-        pass
-    def research_time(self):
-        pass
-    def research_material(self):
-        pass
-
-class BPC(BPO):
+class BPC(Blueprint):
     """ a real bpc"""
-    def __init__(self, itemID, blueprintID):
+
+    def __init__(self, blueprintID, runs=None, ME=0, TE=0):
         """ define the bpc properties"""
-        self.runs = None
+        super(BPC, self).__init__(blueprintID)
+
+        self.blueprintID = blueprintID
+        self.runs = runs
+        self.ME = ME
+        self.TE = TE
+        self.initialize_BP()
+
 
 
 if __name__ == '__main__':
+    os.chdir('../')
     main()

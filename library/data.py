@@ -33,11 +33,11 @@ class SDE(object):
         """ initialize attributes where to store all sde data"""
         parser = configparser.ConfigParser()
 
-        parser.read('settings.ini')
+        parser.read('D:/Documents/py_code/EVEIndyTool/settings.ini')
         self.DB_LOCATION_CSV = parser.get('locations', 'DB_LOCATION_CSV')
         self.DB_LOCATION_PRIMARY = parser.get('locations', 'DB_LOCATION_PRIMARY')
         self.DB_LOCATION_SECONDARY = parser.get('locations', 'DB_LOCATION_SECONDARY', )
-        self.DB_LOCATION_PICKLE = 'database/'
+        self.DB_LOCATION_PICKLE = 'D:/Documents/py_code/EVEIndyTool/database/'
 
         #self.QUICK_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs')
         self.PRIMARY_IMPORT_LIST = ('typeIDs', 'blueprints', 'categoryIDs', 'groupIDs', 'iconIDs')
@@ -361,7 +361,7 @@ class API(object):
         """ get api values from keys.ini. File must be in main program directory"""
         char_number = 12
         parser = configparser.ConfigParser()
-        parser.read('keys.ini')
+        parser.read('D:\Documents\py_code\EVEIndyTool\keys.ini')
         if corp:
             api_type = 'api_corp'
         else:
@@ -495,7 +495,7 @@ class ESI(object):  # todo: find out how to make authorized requests
     def __init__(self):
         """ """
         self.url_serverStatus = 'https://esi.tech.ccp.is/latest/status/?datasource=tranquility&user_agent=eveindytool'
-        self.DB_LOCATION = 'database/'
+        self.DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'
         self.root = 'https://esi.tech.ccp.is/latest/'
         self.user_agent = 'eveindytool_Pax_Correl'
         DB_LOCATION = 'D:/Documents/py_code/EVEIndyTool/database/'  # comment when at home
@@ -536,8 +536,14 @@ class Market(ESI):
 
     def load_marketData(self):
         filePath = self.DB_LOCATION + 'marketdata.p'
+        print('Importing: marketdata')
+        timer = gfs.Timer()
+        timer.tic()
         with open(filePath, 'rb') as f:
             self.data = pickle.load(f)
+        dt = timer.toc(out='return')
+        print('Imported marketdata in {0:3f} ms'.format(dt))
+
 
     def update_marketData(self):
         """ update from web and dump to pickle database"""

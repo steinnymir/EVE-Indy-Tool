@@ -21,10 +21,12 @@ def main():
     item = 'crow'
     invent(item)
 
-
     timer.toc()
     timer.reset()
+
+
 def invent(product_IDorname):  # todo: implement item or bp recognition
+
     product = Item(product_IDorname)
     product_blueprintID = product.parent_blueprintID
     product_bp = Blueprint(product_blueprintID)
@@ -35,17 +37,16 @@ def invent(product_IDorname):  # todo: implement item or bp recognition
     inv_materials_raw = inventionBP.invention_materials
     inv_materials = {}
     tot_price = 0
-    for key,value in inv_materials_raw.items():
+    for key, value in inv_materials_raw.items():
         inv_materials[key] = value / inv_probability
 
     for items, quantity in inv_materials.items():
         item = Item(items)
-        price = item.price*quantity
+        price = item.price * quantity
         print(item.name, quantity, isk(price))
         tot_price += price
         print(isk(tot_price))
     return inv_materials, tot_price
-
 
 
 def TEMP_manufacture_item(item):
@@ -54,6 +55,7 @@ def TEMP_manufacture_item(item):
     :return:
     """
     base_materials, production_list = manufacture(item)
+
     totprice = 0
     market_value = Item(item).price
     print('Shopping List:')
@@ -70,9 +72,11 @@ def TEMP_manufacture_item(item):
 
     print('Market Value: ' + isk(market_value) + '  Production cost: ' + isk(totprice))
     print('gain: ' + isk(market_value - totprice))
-    print('gain %: ' + str(round(((market_value - totprice)/market_value)*100,2)))
+    print('gain %: ' + str(round(((market_value - totprice) / market_value) * 100, 2)))
 
-def manufacture(product_IDorname):  # todo: implement item or bp recognition
+
+def manufacture(product_IDorname, material_efficiency=0,  ):  # todo: implement item or bp recognition
+
     product = Item(product_IDorname)
 
     # if product.parent_blueprintID is None:
@@ -86,6 +90,8 @@ def manufacture(product_IDorname):  # todo: implement item or bp recognition
     stationBonus = 1
     rigBonus = 2 * 0
     effectiveME = (100 - ME - stationBonus - rigBonus) / 100
+
+
     raw_materials = product_bp.manufacturing_materials
     # product_bp.print_manufacturing_materials()
     base_materials = {}
@@ -98,47 +104,18 @@ def manufacture(product_IDorname):  # todo: implement item or bp recognition
 
     for item, quantity in materials.items():
         base2, mat2 = manufacture(item)
-        for baseitem, basequantity in base2.items():
+        for base_item, base_quantity in base2.items():
             try:
-                base_materials[baseitem] += basequantity*quantity
+                base_materials[base_item] += base_quantity * quantity
             except KeyError:
-                base_materials[baseitem] = basequantity*quantity
-        for matitem, matquantity in mat2.items():
+                base_materials[base_item] = base_quantity * quantity
+        for mat_item, mat_quantity in mat2.items():
             try:
-                materials[matitem] += matquantity*quantity
+                materials[mat_item] += mat_quantity * quantity
             except KeyError:
-                materials[matitem] = matquantity*quantity
+                materials[mat_item] = mat_quantity * quantity
+
     return base_materials, materials
-
-
-
-
-    #
-    # pop_list = []
-    # children_materials = {}
-    # for item in materials:
-    #     matlist = manufacture(item)
-    #     if type(matlist) == dict:
-    #         for key in matlist:
-    #             try:
-    #                 children_materials[key] += matlist[key]
-    #             except KeyError:
-    #                 children_materials[key] = matlist[key]
-    #         pop_list.append(item)
-    #     else:
-    #         pass
-    # for item in children_materials:
-    #     try:
-    #         materials[item] += children_materials[item]
-    #     except KeyError:
-    #         materials[item] = children_materials[item]
-    #
-    # # for item in materials:
-    # #     if item in pop_list:
-    # #         pass
-    # #     else:
-    # #         final_materials[item] = materials[item]
-    # return materials, pop_list
 
 
 def basic_manufacturing():
