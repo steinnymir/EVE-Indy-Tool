@@ -45,7 +45,10 @@ class Timer(object):
     def reset(self):
         self.timestamps = []
 
-        
+class Style:
+    B_start = '\033[1m'
+    B_stop = '\033[0m'
+
 #%% Functions
 
 def getNum_or_Str(string):
@@ -71,8 +74,8 @@ def roundup(number):
 
 
 def isk(num, suffix=' ISK'):
-    for unit in ['','K','M','G','T','P','E','Z']:
+    for unit in ['','K','M']:
         if abs(num) < 1000.0:
             return "%3.2f%s%s" % (num, unit, suffix)
         num /= 1024.0
-    return "%.1f%s%s" % (num, 'Y', suffix)
+    return "%.1f%s%s" % (num, 'B', suffix)

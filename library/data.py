@@ -274,7 +274,7 @@ class SDE(object):
                 if itemName == name.lower():
                     return key
             except KeyError:
-                pass
+                return None
 
     def get_parent_blueprintID(self, itemID):  # todo: Fix me
         """ returns the blueprintID that produces the item with given itemID, if none, return None

@@ -4,7 +4,10 @@ Created on Sat May 20 17:02:12 2017
 
 @author: Stymir
 """
-from library import data, gfs
+from library import data
+from library.gfs import roundup, Timer, isk, Style
+import datetime
+
 import os
 
 try:
@@ -14,19 +17,22 @@ except ImportError:
 
 
 def main():
-    timer = gfs.Timer()
-    timer.tic()
+    global_timer = Timer()
+    global_timer.tic()
 
-    bpName = 'Enyo'
-    bp = Blueprint(Item('Enyo').parent_blueprintID)
+    itemName = 'kirin'
+    bp = BPC(Item(itemName).parent_blueprintID,runs=4,ME=4,TE=2)
 
-    bpc = BPC(bp.blueprintID,runs=4,ME=10,TE=20)
-    station = Station(station_class='Azbel',system_class='HighSec')
-    print(station.get_material_efficiency(bpc))
-
-
-    timer.toc()
-
+    if bp.itemID is not None:
+        station = Station(station_class='Azbel', system_class='HighSec')
+        station.rigs_bonus['Advanced Small Ship']['ME'] = True
+        station.rigs_bonus['Advanced Small Ship']['TE'] = True
+        station.rigs_bonus['Advanced Component']['ME'] = True
+        station.rigs_bonus['Advanced Component']['TE'] = True
+        station.rigs_bonus['Invention']['ME'] = False
+        station.get_manufacture_shopping_list(bp)
+    global_timer.toc()
+    global_timer.reset()
 
 class Indy(object):
     """ wrapper class to give data to all EVEItem, Blueprints etc instances"""
@@ -91,7 +97,7 @@ class Station(Indy):
             'Advanced Component': {'ME': False, 'TE': False},
             'Advanced Large Ship': {'ME': False, 'TE': False},
             'Advanced Medium Ship': {'ME': False, 'TE': False},
-            'Advanced Small Ship': {'ME': True, 'TE': False},
+            'Advanced Small Ship': {'ME': False, 'TE': False},
             'Ammunition': {'ME': False, 'TE': False},
             'Basic Capital Component': {'ME': False, 'TE': False},
             'Basic Large Ship': {'ME': False, 'TE': False},
@@ -150,7 +156,6 @@ class Station(Indy):
             'TE research': (),
         }
 
-
     def init_station_bonuses(self):
         """ depending on station name, set the right bonuses"""
         if self.station_class == 'Azbel':
@@ -168,14 +173,60 @@ class Station(Indy):
         else:
             raise TypeError('{} is not an Engineering Complex'.format(self.station_class))
 
+    def get_manufacture_shopping_list(self, product_bpc):
+        """
+        get a blueprint, print and return the requirements, costs etc
+
+        :return:
+        """
+        materials, components, time, comptime = self.acivity_manufacture(product_bpc)
+        product = product_bpc.get_product()
+        if product.metaGroupID == 2:
+            inv_materials, inv_price, inv_time = self.acivity_invent(product_bpc)
+        else:
+            inv_materials, inv_price, inv_time = 0, 0, 0
+        totprice = 0
+        market_value = product.price * product_bpc.runs
+        total_prod_time = inv_time + time + comptime
+        totprice += inv_price
+        print('Manufacturing of: ' + Style.B_start + product.name + Style.B_stop)
+        print('\n ------ Shopping List -------')
+        for material, quantity in materials.items():
+            mat = Item(material)
+            price = mat.price * quantity
+            print(str(mat.name).rjust(50), str(quantity).rjust(7), isk(mat.price), isk(price))
+            totprice += price
+        for material, quantity in inv_materials.items():
+            mat = Item(material)
+            price = mat.price * quantity
+            print(str(mat.name).rjust(50), str(roundup(quantity)).rjust(7), isk(mat.price), isk(price))
+            totprice += price
+
+        print('\n ------ Production List -------')
+        for material, quantity in components.items():
+            mat = Item(material)
+            print(str(mat.name).rjust(20), isk(quantity))
+
+
+        print('\n\nMarket Value: ' + isk(market_value) +
+              '  Production cost: ' + isk(totprice) +
+              '  Production Time: ' + str(datetime.timedelta(seconds=total_prod_time)))
+        print('gain: ' + isk(market_value - totprice))
+        print('gain %: ' + str(round(((market_value - totprice) / market_value) * 100, 2)))
+        print('gain/h: ' + isk((market_value - totprice)/(total_prod_time/3600)) + '/h')
+        print('gain/h all slots: ' + isk((market_value - totprice)/(total_prod_time/3600) * 120)+ '/h')
+
+
     def get_material_efficiency(self, blueprint):
         """
         get the material efficiency of the given blueprint in this station, with its assembly lines.
         calculated as (1-base_ME) * (1-rig_ME_bonus) *(1 - station_ME_bonus) * (1 - skill_ME_bonus)
         :blueprint: BPO or BPC
             blueprint copy or original
-        :return: float
+        :return ME: float
             effective material efficiency: multiplier for materials.
+        :return TE: float
+            effective time efficiency: multiplier for production time.
         """
         if isinstance(blueprint, BPC):
             base_ME = blueprint.ME
@@ -201,8 +252,7 @@ class Station(Indy):
                 if self.rigs_bonus['Drone and Fighter']['TE']:
                     rig_TE_bonus = 0.2
             elif product.categoryName == 'Ship':  # todo: make difference between small med and large ships
-                print('true')
-                if product.metaGroupID == 2:
+                if product.metaGroupID == 2 or product.metaGroupID == '2':
                     if self.rigs_bonus['Advanced Small Ship']['ME']:
                         rig_ME_bonus = 0.02
                     if self.rigs_bonus['Advanced Small Ship']['TE']:
@@ -230,54 +280,111 @@ class Station(Indy):
                         rig_TE_bonus = 0.2
 
             skill_TE_bonus = 0.2
-            ME = (1 - base_ME/100) * (1 - rig_ME_bonus * self.system_mod) * (1 - self.ME_bonus)
-            TE = (1 - base_TE/100) * (1 - rig_TE_bonus * self.system_mod) * (1 - self.TE_bonus) * (1 - skill_TE_bonus)
-            print(base_ME,rig_ME_bonus,self.system_mod,self.ME_bonus)
+            ME = (1 - base_ME / 100) * (1 - rig_ME_bonus * self.system_mod) * (1 - self.ME_bonus)
+            TE = (1 - base_TE / 100) * (1 - rig_TE_bonus * self.system_mod) * (1 - self.TE_bonus) * (1 - skill_TE_bonus)
+            # print(base_ME, rig_ME_bonus, self.system_mod, self.ME_bonus)
             return ME, TE
         else:
             raise TypeError('given blueprint is neither a BPO or a BPC')
 
-
-    def acivity_manufacture(self, blueprintID):
-        """ use an assembly line of the station to manufacture the given blueprint.
+    def acivity_manufacture(self, product_or_BP, runs=1, ME=0, TE=0):  # todo: implement parallelization of production
         """
-        pass  # todo: get from masterscript
+        calculate all necessary components and productions needed for manufacturing the given product
+        :param product_IDorname: int or str
+            name or ID of the product
+        :return materials : dict
+            dictionary containing all base materials required for manufacturing chain.
+        :return components: dict
+            all components, items, tools etc required to be manufactured for use in the final manufacturing process
+        :return product_manufacturing_time: float
+            time required to produce the final product
+        :return component_manufacturing_time: float
+            time required to produce necessary components
+        """
 
-    def acivity_invent(self, blueprintID):
+        if isinstance(product_or_BP,BPC):
+            product_bp = product_or_BP
+            runs = product_bp.runs  # todo: add check for base item quantity, such as missiles
+        else:
+            product = Item(product_or_BP)
+            product_blueprintID = product.parent_blueprintID
+            # product_bp = Blueprint(product_blueprintID)
+
+            # todo: implement owned BP control
+            if product.metaGroupID == 2:
+                product_bp = BPC(product_blueprintID, runs=4, ME=10, TE=20)
+            else:
+                product_bp = BPC(product_blueprintID, runs=1, ME=10,TE=20)
+
+        effectiveME, effectiveTE = self.get_material_efficiency(product_bp)
+        product_manufacturing_time = product_bp.manufacturing_time * effectiveTE
+
+        raw_materials = product_bp.manufacturing_materials  # raw bp requirements
+        materials = {}  # base materials required
+        components = {}  # components which require to be manufactured
+        component_manufacturing_time = 0
+
+        for item in raw_materials:
+            if Item(item).parent_blueprintID is None:  # todo: implement coosing between what to pre-produce
+                materials[item] = roundup(raw_materials[item] * effectiveME * runs)
+            else:
+                components[item] = roundup(raw_materials[item] * effectiveME * runs)
+
+        for component, quantity in components.items():
+            sub_materials, sub_components, sub_time, sub_comp_time = self.acivity_manufacture(component)
+
+            component_manufacturing_time += sub_time + sub_comp_time
+
+            for s_m_material, s_m_quantity in sub_materials.items():
+                try:
+                    materials[s_m_material] += s_m_quantity * quantity
+                except KeyError:
+                    materials[s_m_material] = s_m_quantity * quantity
+            for s_c_material, s_c_quantity in sub_components.items():
+                try:
+                    components[s_c_material] += s_c_quantity * quantity
+                except KeyError:
+                    components[s_c_material] = s_c_quantity * quantity
+
+        return materials, components, product_manufacturing_time, component_manufacturing_time
+
+    def acivity_invent(self, product_or_BP):
         """ use an assembly line of the station to invent the given blueprint.
         """
-        pass  # todo: get from masterscript
 
+        if isinstance(product_or_BP, BPC):
+            product_bp = product_or_BP
+            runs = product_bp.runs
+        else:
+            product = Item(product_or_BP)
+            product_blueprintID = product.parent_blueprintID
+            product_bp = BPC(product_blueprintID)
+            # todo: implement datacore
 
-class AssemblyLine(Indy):
-    """ the object which does all industry stuff: manufacture, invention etc"""
+        parent_invention_bpID = product_bp.inventionBP
 
-    def __init__(self, assemblyLine):
-        super(self).__init__()
-        """ """
+        inventionBP = Blueprint(parent_invention_bpID)
+        inv_probability = inventionBP.invention_probability
+        inv_materials_raw = inventionBP.invention_materials
 
-        self.assemblyLineTypeID = None
-        self.assemblyLineTypeName = None
-        # from ramAssemblyLineTypes
-        self.activityID = None
-        self.baseCostMultiplier = None
-        self.baseMaterialMultiplier = None
-        self.baseTimeMultiplier = None
-        self.description = None
-        self.volume = None
-        self.categoryID_multipliers = None
-        self.groupID_multipliers = None
+        inv_rig_bonus = self.rigs_bonus['Invention']['TE']
 
-    def initialize_multipliers(self):
-        """ init groupID and categoryID based multipliers"""
+        inv_time = inventionBP.invention_time / inv_probability / 4
 
-        for key in self.sde.ramAssemblyLineTypeDetailPerCategory:
-            if self.sde.ramAssemblyLineTypeDetailPerCategory[key]['assemblyLineTypeID'] == self.assemblyLineTypeID:
-                self.categoryID_multipliers = self.sde.ramAssemblyLineTypeDetailPerCategory[key]
+        inv_materials = {}
 
-        for key in self.sde.ramAssemblyLineTypeDetailPerGroup:
-            if self.sde.ramAssemblyLineTypeDetailPerGroup[key]['assemblyLineTypeID'] == self.assemblyLineTypeID:
-                self.groupID_multipliers = self.sde.ramAssemblyLineTypeDetailPerGroup[key]
+        tot_price = 0
+
+        for key, value in inv_materials_raw.items():
+            inv_materials[key] = value / inv_probability
+
+        for items, quantity in inv_materials.items():
+            item = Item(items)
+            price = item.price * quantity
+            print(item.name, quantity, isk(price))
+            tot_price += price
+            print(isk(tot_price))
+        return inv_materials, tot_price, inv_time
 
 
 class Item(Indy):
@@ -286,15 +393,20 @@ class Item(Indy):
     def __init__(self, item):
         super(Item, self).__init__()
         """ initialzie"""
-        if type(item) is str:  # allows for initialization with name or ID (str) or ID (int)
-            try:  # try ID int
-                self.itemID = int(item)
-            except ValueError:  # if not a number: its a name!
-                self.itemID = self.sde.get_ID_from_name(item)
-        elif type(item) is int:
-            self.itemID = item
-        else:
-            print('Invalid item name or ID')
+        try:
+            if type(item) is str:  # allows for initialization with name or ID (str) or ID (int)
+                try:  # try ID int
+                    self.itemID = int(item)
+                except ValueError:  # if not a number: its a name!
+                    self.itemID = self.sde.get_ID_from_name(item)
+                    if self.itemID is None: raise ValueError('invalid item name or ID')
+            elif type(item) is int:
+                self.itemID = item
+            else:
+                raise ValueError('Invalid item name or ID')
+        except ValueError:
+            print('Invalid item name or ID: {}'.format(item))
+            self.itemID = None
         self.attr_list = []
         self.typeIDs_attr_list = ['basePrice', 'marketGroupID', 'capacity', 'description',
                                   'factionID', 'graphicID', 'groupID', 'mass', 'masteries', 'name', 'portionSize',
@@ -340,12 +452,15 @@ class Item(Indy):
             self.price = self.market.get_min_sellprice(self.itemID)
         except KeyError:
             self.price = None
-        self.parent_blueprintID = self.sde.get_parent_blueprintID(self.itemID)
-
-        self.initialize_typeIDs()
-        self.initialize_groupIDs()
-        self.initialize_categoryIDs()
-        self.initialize_invMetaTypes()
+        if self.itemID is None:
+            print('no itemID yet available')
+            self.parent_blueprintID = None
+        else:
+            self.parent_blueprintID = self.sde.get_parent_blueprintID(self.itemID)
+            self.initialize_typeIDs()
+            self.initialize_groupIDs()
+            self.initialize_categoryIDs()
+            self.initialize_invMetaTypes()
 
     def refresh(self):
         """ re-initialize item"""
@@ -404,9 +519,13 @@ class Item(Indy):
             pass
 
     def initialize_invMetaTypes(self):
-        self.metaGroupID = self.sde.invMetaTypes[self.itemID]['metaGroupID']
-        self.parentTypeID = self.sde.invMetaTypes[self.itemID]['parentTypeID']
-        self.metaGroupName = self.sde.invMetaGroups[self.itemID]['metaGroupName']
+        for item in self.sde.invMetaTypes:
+            if item['typeID'] == self.itemID:
+                self.metaGroupID = item['metaGroupID']
+                self.parentTypeID = item['parentTypeID']
+        for item in self.sde.invMetaGroups:
+            if item['metaGroupID'] == self.metaGroupID:
+                self.metaGroupName = item['metaGroupName']
 
 
 class Blueprint(Item):
@@ -451,6 +570,11 @@ class Blueprint(Item):
 
         self.initialize_BP()
 
+    def get_product(self):
+        prod_dict = self.manufacturing_products
+        for key in prod_dict:
+            product = Item(key)
+        return product
 
     def initialize_BP(self):
         """ initializes all BP related attributes"""
@@ -575,7 +699,6 @@ class BPC(Blueprint):
         self.ME = ME
         self.TE = TE
         self.initialize_BP()
-
 
 
 if __name__ == '__main__':
